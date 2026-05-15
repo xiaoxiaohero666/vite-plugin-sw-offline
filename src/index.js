@@ -54,18 +54,8 @@ function injectOfflineHtml(content, swConfig) {
   return content;
 }
 
-/** 未传入 cacheableApiPaths 时使用的默认白名单（与历史 sw.js 一致） */
-const DEFAULT_CACHEABLE_API_PATHS = [
-  '/config/keFu.do',
-  '/config/queryConfig.do',
-  '/config/queryQuestion.do',
-  '/config/queryTradeZD.do',
-  '/news/getNewsList.do',
-  '/site/getBannerByPlat.do',
-  '/user/position/list.do',
-  '/stock/getStockSort.do',
-  '/user/getUserInfo.do'
-];
+/** 未传入 cacheableApiPaths 时使用的默认白名单（空列表，由业务显式配置） */
+const DEFAULT_CACHEABLE_API_PATHS = [];
 
 function resolveCacheableApiPaths(swConfig) {
   const p = swConfig && swConfig.cacheableApiPaths;

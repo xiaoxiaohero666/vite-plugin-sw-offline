@@ -46,30 +46,31 @@ npm install vite-plugin-sw-offline -D
 npm install vite -D
 ```
 
-本包为 **CommonJS**（`main` → `src/index.js`）。在 `vite.config.ts` 中可用 `createRequire`：
-
-```js
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const { vitePluginSwOffline } = require('vite-plugin-sw-offline');
-```
+本包为 **CommonJS**（`main` → `src/index.js`），在 Vite 的 ESM 配置文件中可直接 `import` 使用。
 
 ## 快速接入
 
-### 1. `vite.config.js`
+### 1. `vite.config.ts`
 
-```js
-const { vitePluginSwOffline } = require('vite-plugin-sw-offline');
+```ts
+import { defineConfig } from 'vite';
+import { vitePluginSwOffline } from 'vite-plugin-sw-offline';
 
 export default defineConfig({
   plugins: [
     vitePluginSwOffline({
+      // 未传 CLI --outDir 时的构建产出目录（默认 dist）
       outDir: 'dist',
+      // 离线页 Logo，注入 __OFFLINE_LOGO__ 并参与 SW 预缓存
       offlineLogoPath: '/static/logos/your-logo.png',
+      // 离线页打字机展示的域名文案
       offlineDomain: 'https://www.example.com',
-      cacheableApiPaths: ['/user/getUserInfo.do', '/config/queryConfig.do']
-      // networkProbeUrl: () => '...',  // 可选，见下文
-      // serviceWorker: { apiTimeout: 45000 },
+      // 可走 SWR 的 API 路径白名单（pathname 包含即匹配）；不传则为空
+      cacheableApiPaths: ['/user/getUserInfo.do', '/config/queryConfig.do'],
+      // 导航前外网探测 URL，空则探测同源 /sw.js；见「维护接口探测」
+      // networkProbeUrl: () => 'https://api.example.com/wh/maintain/checkMaintain?productCode=demo',
+      // SW 超时、缓存条数等，对应 sw.js 内 __SW_RT_*__ 占位符
+      // serviceWorker: { apiTimeout: 45000, networkProbeTimeout: 15000 },
     })
   ]
 });
@@ -82,6 +83,7 @@ export default defineConfig({
 在入口 HTML 引入注册脚本，并保留版本占位（构建时由插件替换）：
 
 ```html
+<!-- 构建时 __SW_REGISTER_VERSION__ 会替换为 swVersion，用于破坏 SW 脚本缓存 -->
 <script src="/sw-register.js?v=__SW_REGISTER_VERSION__"></script>
 ```
 
@@ -97,17 +99,17 @@ export const CACHEABLE_SW_API_PATHS = [
 ];
 ```
 
-在 `vite.config.js` 中 `cacheableApiPaths: CACHEABLE_SW_API_PATHS` 传入。不传则使用插件内置示例列表（**生产务必改为自己的列表**）。
+在 `vite.config.ts` 中引入并传入：
 
-### 4. 本地 monorepo 引用
+```ts
+import { CACHEABLE_SW_API_PATHS } from './src/configs/sw-cacheable-api-paths.js';
 
-未发布 npm 前可：
-
-```js
-const { vitePluginSwOffline } = require('./packages/vite-plugin-sw-offline/src/index.js');
+// vitePluginSwOffline({ ... }) 内
+// 可缓存 API 路径白名单，与独立配置文件保持一致便于 Code Review
+cacheableApiPaths: CACHEABLE_SW_API_PATHS,
 ```
 
-发布后改为 `require('vite-plugin-sw-offline')`。
+不传则 API 白名单为空（不缓存任何 API，**生产务必显式配置自己的列表**）。
 
 ## 版本号（swVersion）
 
@@ -219,12 +221,13 @@ function buildSwNetworkProbeUrl(def, productCode) {
 
 ### 回调接入示例
 
-```js
-const configEnv = require('./src/configs/env/xxx/yyy.js');
-const SERIES = require('./src/configs/series/...');
+```ts
+import configEnv from './src/configs/env/xxx/yyy.js';
+import SERIES from './src/configs/series/...';
 
+// defineConfig plugins 内
 vitePluginSwOffline({
-  networkProbeUrl: (ctx) => buildSwNetworkProbeUrl(configEnv.default, SERIES.name)
+  networkProbeUrl: () => buildSwNetworkProbeUrl(configEnv.default, SERIES.name),
   // networkProbeUrl: 'https://api.example.com/wh/maintain/checkMaintain?productCode=demo',
 });
 ```
@@ -265,7 +268,7 @@ vitePluginSwOffline({
 | `offlineLogoPath` | `string` | 离线页 `__OFFLINE_LOGO__` 与 SW 预缓存 Logo；支持 `https://`、根路径 `/`、`?v=`。 |
 | `offlineDomain` | `string` | 离线页打字机文案 `__OFFLINE_DOMAIN__`。 |
 | `offlineTemplatePath` | `string` | 自定义离线页 HTML（绝对路径或相对 `process.cwd()`）。不存在则回退默认模板。 |
-| `cacheableApiPaths` | `string[]` | API 路径白名单（pathname 包含即走 SWR）。不传用内置示例列表。 |
+| `cacheableApiPaths` | `string[]` | API 路径白名单（pathname 包含即走 SWR）。不传则为空列表。 |
 | `robotsTxtContent` | `string` | 非空时覆盖产出目录 `robots.txt`。 |
 | `serviceWorker` | `object` | SW 数值参数，见下表。 |
 
@@ -283,8 +286,9 @@ vitePluginSwOffline({
 
 预览合并结果：
 
-```js
-const { getDefaultServiceWorker, resolveServiceWorker } = require('vite-plugin-sw-offline');
+```ts
+import { getDefaultServiceWorker, resolveServiceWorker } from 'vite-plugin-sw-offline';
+
 resolveServiceWorker({ serviceWorker: { apiTimeout: 5000 } });
 ```
 
@@ -327,8 +331,8 @@ resolveServiceWorker({ serviceWorker: { apiTimeout: 5000 } });
 
 ## 程序化导出
 
-```js
-const {
+```ts
+import {
   vitePluginSwOffline,
   getRuntimeDir,
   getDefaultOfflineTemplatePath,
@@ -338,7 +342,7 @@ const {
   resolveServiceWorker,
   normalizeOfflineLogoPath,
   injectOfflineHtml
-} = require('vite-plugin-sw-offline');
+} from 'vite-plugin-sw-offline';
 ```
 
 | 导出 | 用途 |
@@ -347,7 +351,7 @@ const {
 | `getRuntimeDir()` | 包内 `runtime/` 绝对路径 |
 | `getDefaultOfflineTemplatePath()` | 默认离线页模板路径 |
 | `getDefaultOfflineBackgroundPath()` | 默认背景图路径 |
-| `getDefaultCacheableApiPaths()` | 内置 API 白名单副本 |
+| `getDefaultCacheableApiPaths()` | 默认 API 白名单副本（空数组） |
 | `getDefaultServiceWorker()` | `serviceWorker` 默认值 |
 | `resolveServiceWorker(partial)` | 合并默认值 |
 | `normalizeOfflineLogoPath(raw)` | Logo 路径规范化 |
@@ -391,7 +395,6 @@ vite-plugin-sw-offline/
 
 ```bash
 npm login
-cd packages/vite-plugin-sw-offline
 npm pack --dry-run
 ```
 

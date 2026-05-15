@@ -12,17 +12,18 @@
 
 业务仓只需：
 
-```js
-// vite.config.js
-const { vitePluginSwOffline } = require('vite-plugin-sw-offline'); // 发布后
+```ts
+// vite.config.ts
+import { vitePluginSwOffline } from 'vite-plugin-sw-offline';
+import { CACHEABLE_SW_API_PATHS } from './src/configs/sw-cacheable-api-paths.js';
 
 vitePluginSwOffline({
   outDir: 'dist',
   offlineLogoPath: '...',
   offlineDomain: '...',
-  cacheableApiPaths: require('./src/configs/sw-cacheable-api-paths.js'),
+  cacheableApiPaths: CACHEABLE_SW_API_PATHS,
   robotsTxtContent: '...', // 可选
-  // networkProbeUrl: (ctx) => buildSwNetworkProbeUrl(...), // 可选，见 README
+  // networkProbeUrl: () => buildSwNetworkProbeUrl(...), // 可选，见 README
 });
 ```
 
@@ -32,7 +33,7 @@ vitePluginSwOffline({
 ```
 
 - **不要**在业务 `public/` 放 `sw.js`、`sw-register.js`、`offline.html`、`sw-noop.js`（插件会接管）。
-- API 白名单建议放在业务仓 `sw-cacheable-api-paths.js`，与插件内 `DEFAULT_CACHEABLE_API_PATHS` 对齐维护。
+- API 白名单建议放在业务仓 `sw-cacheable-api-paths.js`；插件默认白名单为空，须由业务传入 `cacheableApiPaths`。
 
 ## 已拍板的设计决策（避免重复争论）
 
@@ -45,12 +46,10 @@ vitePluginSwOffline({
 | 离线页背景 | **全屏 `body` + `background-size: cover` + `top center`**，无媒体查询窄栏方案。 |
 | `define` 陷阱 | 业务 `vite.config` **不要**写 `define: { 'process.env': { APP_ENV, IS_APP } }` 整对象替换，会抹掉 `NODE_ENV`，导致 dev 下 `process.env.NODE_ENV === 'development'` 的 console 失效。应分别 `process.env.APP_ENV` / `IS_APP`。 |
 
-## 发布 npm 前检查
+## npm 发布状态
 
-- `package.json`：去掉 `private`，`files` 含 `src`、`runtime`、`templates`、`assets`、`README.md`
-- `peerDependencies`: `vite ^5 || ^6`
-- `npm pack --dry-run` 预演
-- 业务仓改为 `require('vite-plugin-sw-offline')` 并 `devDependencies` 安装
+- 已发布：`vite-plugin-sw-offline`（npm 安装即可）
+- 业务仓：`npm install vite-plugin-sw-offline -D`，在 `vite.config.ts` 中 `import { vitePluginSwOffline } from 'vite-plugin-sw-offline'`
 
 ## 包内目录
 
@@ -73,6 +72,3 @@ HANDOFF.md         # 本文件（AI/维护者上下文）
 - ESM 入口 / `exports` 字段
 - 将 `buildSwNetworkProbeUrl` 收到插件可选导出（目前只在 README 里给复制粘贴版）
 
----
-
-拆仓后可在业务 `vite.config.js` 删除 `packages/vite-plugin-sw-offline` 的本地 `require` 路径，改为 npm 包名。
