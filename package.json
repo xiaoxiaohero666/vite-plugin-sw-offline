@@ -1,0 +1,28 @@
+{
+  "name": "vite-plugin-sw-offline",
+  "version": "0.1.0",
+  "description": "Vite 插件：Service Worker、离线页模板与构建注入（适用于 Vite H5 / uni-app H5 等）",
+  "main": "src/index.js",
+  "files": [
+    "src",
+    "runtime",
+    "templates",
+    "assets",
+    "README.md"
+  ],
+  "keywords": [
+    "vite-plugin",
+    "service-worker",
+    "offline",
+    "h5",
+    "uni-app",
+    "pwa"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "vite": "^5.0.0 || ^6.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

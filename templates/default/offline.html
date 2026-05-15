@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>网络连接失败</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #131529;
+      background-image: url('/static/offline-bg.jpg');
+      background-size: cover;
+      background-position: top center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      color: #ffffff;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 品牌 LOGO */
+    .logo-wrap {
+      margin-bottom: 20px;
+    }
+
+    .logo-wrap img {
+      width: 120px;
+      height: auto;
+      display: block;
+      border-radius: 20px;
+    }
+
+    /* 模拟浏览器搜索框 */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 324px;
+      height: 36px;
+      border-radius: 18px;
+      border: 1px solid #447AFE;
+      background: #0E1628;
+      margin-bottom: 24px;
+    }
+
+    .search-bar-input {
+      width: 260px;
+      height: 28px;
+      border-radius: 18px;
+      background: #FFF;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      color: #4077FF;
+      font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+      line-height: normal;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-left: 5px;
+    }
+
+    .search-bar-btn {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-bar-btn svg {
+      width: 18px;
+      height: 18px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* 打字机光标闪烁 */
+    .typing-cursor {
+      display: inline-block;
+      color: #4077FF;
+      font-weight: 400;
+      animation: blink 0.8s step-end infinite;
+      margin-left: 1px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #ffffff;
+    }
+
+    p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 40px;
+      line-height: 1.8;
+      padding: 0 10px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    .btn {
+      flex: 1;
+      max-width: 170px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 500;
+      border: none;
+      border-radius: 100px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active {
+      opacity: 0.8;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #6591FD 0%, #3D75FF 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(74, 124, 255, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 品牌 LOGO（构建时注入路径，加载失败则隐藏） -->
+    <div class="logo-wrap" id="logoWrap">
+      <img src="__OFFLINE_LOGO__" alt="" onerror="document.getElementById('logoWrap').style.display='none'" />
+    </div>
+
+    <!-- 模拟浏览器搜索框 -->
+    <div class="search-bar">
+      <div class="search-bar-input">
+        <span id="typingText"></span><span class="typing-cursor">|</span>
+      </div>
+      <div class="search-bar-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+    </div>
+
+    <h1>网络连接失败</h1>
+    <p>请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
+
+    <div class="buttons">
+      <a class="btn btn-secondary" href="javascript:void(0)" id="contactBtn">联系客服</a>
+      <button class="btn btn-primary" onclick="location.reload()">重新加载</button>
+    </div>
+  </div>
+
+  <script>
+    // 打字机动画
+    (function() {
+      var text = '__OFFLINE_DOMAIN__';
+      var el = document.getElementById('typingText');
+      var i = 0;
+      var isDeleting = false;
+      var typeSpeed = 120;
+      var deleteSpeed = 60;
+      var pauseAfterType = 1800;
+      var pauseAfterDelete = 400;
+
+      function tick() {
+        if (!isDeleting) {
+          el.textContent = text.slice(0, i + 1);
+          i++;
+          if (i === text.length) {
+            isDeleting = true;
+            setTimeout(tick, pauseAfterType);
+            return;
+          }
+          setTimeout(tick, typeSpeed);
+        } else {
+          el.textContent = text.slice(0, i - 1);
+          i--;
+          if (i === 0) {
+            isDeleting = false;
+            setTimeout(tick, pauseAfterDelete);
+            return;
+          }
+          setTimeout(tick, deleteSpeed);
+        }
+      }
+
+      setTimeout(tick, 600);
+    })();
+
+    // 尝试从 localStorage 获取客服链接
+    document.getElementById('contactBtn').addEventListener('click', function() {
+      var customerServiceUrl = localStorage.getItem('customerServiceUrl');
+      if (customerServiceUrl) {
+        window.open(customerServiceUrl, '_blank');
+      } else {
+        alert('请在网络恢复后联系客服');
+      }
+    });
+
+    // 监听网络恢复
+    window.addEventListener('online', function() {
+      location.reload();
+    });
+  </script>
+</body>
+</html>
