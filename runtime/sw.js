@@ -96,6 +96,9 @@ const NETWORK_PROBE_URL = '__NETWORK_PROBE_URL__';
 /** 网络探测超时时间（毫秒，构建时注入） */
 const NETWORK_PROBE_TIMEOUT = __SW_RT_NETWORK_PROBE_TIMEOUT__;
 
+/** 离线页文案（构建时注入 JSON，与 offline.html 同源） */
+const OFFLINE_I18N = __OFFLINE_I18N_INJECT__;
+
 // ============================================
 // 二、工具函数
 // ============================================
@@ -216,6 +219,52 @@ async function purgeStaleApiEntries() {
   }
 }
 
+function stringifyOfflineI18nForInlineScript() {
+  try {
+    return JSON.stringify(OFFLINE_I18N).replace(/</g, '\\u003c');
+  } catch (e) {
+    return '{}';
+  }
+}
+
+/**
+ * SW 内联兜底离线页 HTML（无 search-bar；语言逻辑与 offline.html 一致）
+ */
+function buildInlineOfflineFallbackHtml() {
+  const messagesJson = stringifyOfflineI18nForInlineScript();
+  const script =
+    '(function(){var M=' +
+    messagesJson +
+    ';var SHORT={en:"en_US",zh:"zh_CN",ja:"ja_JP",ko:"ko_KR",ar:"ar_SA",hi:"hi_IN",pt:"pt_BR",ru:"ru_RU",th:"th_TH",tr:"tr_TR",vi:"vi_VN",es:"es_MX"};function norm(s){if(!s||typeof s!=="string")return "";s=s.trim().replace(/-/g,"_");if(s.indexOf("_")===-1)return SHORT[s.toLowerCase()]||"";var i=s.indexOf("_");return s.slice(0,i).toLowerCase()+"_"+s.slice(i+1).toUpperCase();}function resolveKey(){var u="";try{u=new URLSearchParams(location.search).get("locale")||"";}catch(e){}var st="";try{var raw=localStorage.getItem("common");if(raw){var o=JSON.parse(raw);if(o&&typeof o.locale==="string")st=o.locale;}}catch(e){}return norm(u)||norm(st)||"zh_CN";}var key=resolveKey();if(!M[key])key="zh_CN";var t=M[key]||M.zh_CN;if(!t)return;document.documentElement.setAttribute("lang",key.replace("_","-"));if(key.indexOf("ar_")===0)document.documentElement.setAttribute("dir","rtl");document.title=t.title;var el=document.getElementById("oh");if(el)el.textContent=t.heading;el=document.getElementById("ob");if(el)el.textContent=t.body;el=document.getElementById("oc");if(el)el.textContent=t.contact;el=document.getElementById("or");if(el)el.textContent=t.reload;window.__offlineContactHint=t.contactOfflineHint;})();';
+  return (
+    '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">' +
+    '<title></title>' +
+    '<style>*{margin:0;padding:0;box-sizing:border-box}' +
+    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#131529;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 20px;color:#fff}' +
+    '.c{text-align:center;max-width:400px;width:100%}' +
+    'h1{font-size:22px;font-weight:600;margin-bottom:16px}' +
+    'p{font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:40px;line-height:1.8;padding:0 10px}' +
+    '.btns{display:flex;justify-content:center;gap:16px}' +
+    '.btn{flex:1;max-width:170px;display:inline-flex;align-items:center;justify-content:center;padding:14px 20px;font-size:15px;font-weight:500;border:none;border-radius:28px;cursor:pointer;text-decoration:none;-webkit-tap-highlight-color:transparent}' +
+    '.btn:active{opacity:0.8}' +
+    '.s{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.12)}' +
+    '.p{background:linear-gradient(180deg,#6591FD 0%,#3D75FF 100%);color:#fff;box-shadow:0 4px 16px rgba(74,124,255,0.3);border-radius:100px}' +
+    '</style></head>' +
+    '<body><div class="c">' +
+    '<h1 id="oh"></h1>' +
+    '<p id="ob"></p>' +
+    '<div class="btns">' +
+    '<a class="btn s" href="javascript:void(0)" id="oc" onclick="var u=localStorage.getItem(\'customerServiceUrl\');u?window.open(u,\'_blank\'):alert(window.__offlineContactHint||\'\')"></a>' +
+    '<button class="btn p" type="button" id="or" onclick="location.reload()"></button>' +
+    '</div></div>' +
+    '<script>' +
+    script +
+    '</script>' +
+    '<script>window.addEventListener("online",function(){location.reload()});</script>' +
+    '</body></html>'
+  );
+}
+
 /**
  * 返回离线页面
  * 优先从缓存读取完整的 offline.html，
@@ -230,31 +279,10 @@ async function getOfflineResponse() {
   // 内联兜底：仅在 offline.html 完全无法从缓存获取时才使用
   // 注意：文案和按钮需与 offline.html 保持一致，避免用户体验割裂
   console.warn('[SW] offline.html not in cache, using inline fallback');
-  return new Response(
-    '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">' +
-    '<title>网络连接失败</title>' +
-    '<style>*{margin:0;padding:0;box-sizing:border-box}' +
-    'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#131529;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 20px;color:#fff}' +
-    '.c{text-align:center;max-width:400px;width:100%}' +
-    'h1{font-size:22px;font-weight:600;margin-bottom:16px}' +
-    'p{font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:40px;line-height:1.8;padding:0 10px}' +
-    '.btns{display:flex;justify-content:center;gap:16px}' +
-    '.btn{flex:1;max-width:170px;display:inline-flex;align-items:center;justify-content:center;padding:14px 20px;font-size:15px;font-weight:500;border:none;border-radius:28px;cursor:pointer;text-decoration:none;-webkit-tap-highlight-color:transparent}' +
-    '.btn:active{opacity:0.8}' +
-    '.s{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.12)}' +
-    '.p{background:linear-gradient(180deg,#6591FD 0%,#3D75FF 100%);color:#fff;box-shadow:0 4px 16px rgba(74,124,255,0.3);border-radius:100px}' +
-    '</style></head>' +
-    '<body><div class="c">' +
-    '<h1>网络连接失败</h1>' +
-    '<p>请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>' +
-    '<div class="btns">' +
-    '<a class="btn s" href="javascript:void(0)" onclick="var u=localStorage.getItem(\'customerServiceUrl\');u?window.open(u,\'_blank\'):alert(\'请在网络恢复后联系客服\')">联系客服</a>' +
-    '<button class="btn p" onclick="location.reload()">重新加载</button>' +
-    '</div></div>' +
-    '<script>window.addEventListener("online",function(){location.reload()});</script>' +
-    '</body></html>',
-    { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-  );
+  return new Response(buildInlineOfflineFallbackHtml(), {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' }
+  });
 }
 
 /**

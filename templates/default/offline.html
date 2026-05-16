@@ -201,7 +201,7 @@
       <div class="search-bar-input">
         <span id="typingText"></span><span class="typing-cursor">|</span>
       </div>
-      <div class="search-bar-btn" id="copyDomainBtn" role="button" tabindex="0" aria-label="复制域名">
+      <div class="search-bar-btn" id="copyDomainBtn" role="button" tabindex="0" aria-label="">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="7"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -209,19 +209,84 @@
       </div>
     </div>
 
-    <h1>网络连接失败</h1>
-    <p>请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
+    <h1 id="offline-heading">网络连接失败</h1>
+    <p id="offline-body">请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
 
     <div class="buttons">
       <a class="btn btn-secondary" href="javascript:void(0)" id="contactBtn">联系客服</a>
-      <button class="btn btn-primary" onclick="location.reload()">重新加载</button>
+      <button type="button" class="btn btn-primary" id="reloadBtn" onclick="location.reload()">重新加载</button>
     </div>
   </div>
 
-  <div class="copy-toast" id="copyToast" aria-live="polite">复制成功！</div>
+  <div class="copy-toast" id="copyToast" aria-live="polite"></div>
 
   <script>
+    window.__OFFLINE_I18N__ = __OFFLINE_I18N_INJECT__;
     var offlineDomainText = '__OFFLINE_DOMAIN__';
+
+    (function applyOfflineLocale() {
+      var M = window.__OFFLINE_I18N__ || {};
+      var SHORT_TO_FULL = {
+        en: 'en_US',
+        zh: 'zh_CN',
+        ja: 'ja_JP',
+        ko: 'ko_KR',
+        ar: 'ar_SA',
+        hi: 'hi_IN',
+        pt: 'pt_BR',
+        ru: 'ru_RU',
+        th: 'th_TH',
+        tr: 'tr_TR',
+        vi: 'vi_VN',
+        es: 'es_MX'
+      };
+      function normalizeLocaleKey(s) {
+        if (!s || typeof s !== 'string') return '';
+        s = s.trim().replace(/-/g, '_');
+        if (s.indexOf('_') === -1) return SHORT_TO_FULL[s.toLowerCase()] || '';
+        var i = s.indexOf('_');
+        return s.slice(0, i).toLowerCase() + '_' + s.slice(i + 1).toUpperCase();
+      }
+      function resolveOfflineLocaleKey() {
+        var fromUrl = '';
+        try {
+          fromUrl = new URLSearchParams(window.location.search).get('locale') || '';
+        } catch (e) {}
+        var fromStorage = '';
+        try {
+          var rawCommon = localStorage.getItem('common');
+          if (rawCommon) {
+            var parsed = JSON.parse(rawCommon);
+            if (parsed && typeof parsed.locale === 'string') fromStorage = parsed.locale;
+          }
+        } catch (e) {}
+        return normalizeLocaleKey(fromUrl) || normalizeLocaleKey(fromStorage) || 'zh_CN';
+      }
+      var loc = resolveOfflineLocaleKey();
+      if (!M[loc]) loc = 'zh_CN';
+      var t = M[loc] || M.zh_CN;
+      if (!t) return;
+      document.documentElement.setAttribute('lang', loc.replace('_', '-'));
+      if (loc.indexOf('ar_') === 0) document.documentElement.setAttribute('dir', 'rtl');
+      document.title = t.title;
+      var el = document.getElementById('offline-heading');
+      if (el) el.textContent = t.heading;
+      el = document.getElementById('offline-body');
+      if (el) el.textContent = t.body;
+      el = document.getElementById('contactBtn');
+      if (el) el.textContent = t.contact;
+      el = document.getElementById('reloadBtn');
+      if (el) el.textContent = t.reload;
+      el = document.getElementById('copyDomainBtn');
+      if (el) el.setAttribute('aria-label', t.copyAria);
+      el = document.getElementById('copyToast');
+      if (el) el.textContent = t.copySuccess;
+      window.__offlineUiStrings = {
+        copySuccess: t.copySuccess,
+        copyFail: t.copyFail,
+        contactOfflineHint: t.contactOfflineHint
+      };
+    })();
 
     // 打字机动画
     (function() {
@@ -266,6 +331,9 @@
       var toastTimer = null;
 
       function showCopyToast() {
+        if (window.__offlineUiStrings && window.__offlineUiStrings.copySuccess) {
+          toast.textContent = window.__offlineUiStrings.copySuccess;
+        }
         toast.classList.add('show');
         if (toastTimer) clearTimeout(toastTimer);
         toastTimer = setTimeout(function() {
@@ -300,7 +368,8 @@
         var text = (offlineDomainText || '').trim();
         if (!text) return;
         copyToClipboard(text).then(showCopyToast).catch(function() {
-          alert('复制失败，请手动复制');
+          var msg = (window.__offlineUiStrings && window.__offlineUiStrings.copyFail) || '';
+          alert(msg);
         });
       }
 
@@ -319,7 +388,8 @@
       if (customerServiceUrl) {
         window.open(customerServiceUrl, '_blank');
       } else {
-        alert('请在网络恢复后联系客服');
+        var msg = (window.__offlineUiStrings && window.__offlineUiStrings.contactOfflineHint) || '';
+        alert(msg);
       }
     });
 

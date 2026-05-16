@@ -8,6 +8,7 @@ const path = require('path');
 const PKG_ROOT = path.join(__dirname, '..');
 const RUNTIME_DIR = path.join(PKG_ROOT, 'runtime');
 const DEFAULT_OFFLINE_HTML = path.join(PKG_ROOT, 'templates', 'default', 'offline.html');
+const DEFAULT_OFFLINE_I18N_JSON = path.join(PKG_ROOT, 'templates', 'default', 'offline-i18n.json');
 /** 默认离线页背景（与模板、runtime/sw.js 中 /static/offline-bg.jpg 一致） */
 const DEFAULT_OFFLINE_BG_JPG = path.join(PKG_ROOT, 'assets', 'offline-bg.jpg');
 
@@ -43,7 +44,25 @@ function normalizeOfflineLogoPath(raw) {
   return withSlash + query;
 }
 
+function loadOfflineI18nMessages() {
+  try {
+    const raw = fs.readFileSync(DEFAULT_OFFLINE_I18N_JSON, 'utf-8');
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn(LOG, 'offline-i18n.json missing or invalid:', e.message);
+    return {};
+  }
+}
+
+function injectOfflineI18nPlaceholder(content) {
+  const messages = loadOfflineI18nMessages();
+  const raw = JSON.stringify(messages);
+  const safe = raw.replace(/</g, '\\u003c');
+  return content.replace(/__OFFLINE_I18N_INJECT__/g, safe);
+}
+
 function injectOfflineHtml(content, swConfig) {
+  content = injectOfflineI18nPlaceholder(content);
   const logo = normalizeOfflineLogoPath((swConfig && swConfig.offlineLogoPath) || '');
   if (logo) {
     content = content.replace(/__OFFLINE_LOGO__/g, logo);
@@ -116,6 +135,7 @@ function injectServiceWorkerPlaceholders(content, swConfig) {
 }
 
 function applySwJsPlaceholders(content, swConfig) {
+  content = injectOfflineI18nPlaceholder(content);
   content = injectServiceWorkerPlaceholders(content, swConfig);
   const apiPathsJson = JSON.stringify(resolveCacheableApiPaths(swConfig));
   content = content.replace(
