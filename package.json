@@ -1,15 +1,19 @@
 {
   "name": "vite-plugin-sw-offline",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Vite 插件：Service Worker、离线页模板与构建注入（适用于 Vite H5 / uni-app H5 等）",
   "main": "src/index.js",
   "files": [
     "src",
     "runtime",
     "templates",
+    "scripts",
     "assets",
     "README.md"
   ],
+  "scripts": {
+    "build:offline-previews": "node scripts/build-offline-previews.js"
+  },
   "keywords": [
     "vite-plugin",
     "service-worker",

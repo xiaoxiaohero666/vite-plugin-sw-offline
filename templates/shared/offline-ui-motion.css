@@ -1,0 +1,210 @@
+/**
+ * 离线页公用 UI 动效（构建时注入，置于各皮肤样式之后）
+ * 皮肤可通过 :root 覆盖变量：
+ * --offline-glow / --offline-glow-soft / --offline-shine
+ */
+:root {
+  --offline-glow: rgba(99, 102, 241, 0.55);
+  --offline-glow-soft: rgba(99, 102, 241, 0.2);
+  --offline-shine: rgba(255, 255, 255, 0.35);
+}
+
+@keyframes offline-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes offline-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes offline-bar-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 var(--offline-glow-soft),
+      inset 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 20px 0 var(--offline-glow-soft),
+      inset 0 0 12px 0 var(--offline-glow-soft);
+  }
+}
+
+@keyframes offline-input-shimmer {
+  0% { background-position: 120% 0; }
+  100% { background-position: -40% 0; }
+}
+
+@keyframes offline-heading-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 10px var(--offline-glow-soft)); }
+}
+
+@keyframes offline-btn-primary-pulse {
+  0%, 100% { box-shadow: 0 4px 16px var(--offline-glow-soft); }
+  50% { box-shadow: 0 6px 28px var(--offline-glow); }
+}
+
+@keyframes offline-btn-shine {
+  0% { left: -100%; }
+  100% { left: 120%; }
+}
+
+.container {
+  animation: offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.logo-wrap {
+  animation: offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
+}
+
+.logo-wrap img {
+  animation: offline-logo-float 4.5s ease-in-out infinite;
+}
+
+.search-bar {
+  animation:
+    offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both,
+    offline-bar-glow 3.2s ease-in-out infinite;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.search-bar:active {
+  transform: scale(0.99);
+}
+
+.search-bar-input {
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.search-bar-input::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    var(--offline-shine) 50%,
+    transparent 65%
+  );
+  background-size: 200% 100%;
+  animation: offline-input-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.search-bar-btn {
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.search-bar-btn:hover,
+.search-bar-btn:focus-visible {
+  transform: scale(1.06);
+  box-shadow: 0 0 14px var(--offline-glow-soft);
+}
+
+.search-bar-btn:active {
+  transform: scale(0.94);
+}
+
+h1#offline-heading {
+  animation:
+    offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both,
+    offline-heading-glow 3.5s ease-in-out infinite;
+}
+
+p#offline-body {
+  animation: offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+}
+
+.buttons {
+  animation: offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.btn-primary {
+  animation: offline-btn-primary-pulse 2.8s ease-in-out infinite;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--offline-shine), transparent);
+  animation: offline-btn-shine 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  box-shadow: 0 0 16px var(--offline-glow-soft);
+}
+
+.copy-toast {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.copy-toast.show {
+  transform: translateX(-50%) translateY(-6px);
+}
+
+.typing-cursor {
+  animation: offline-cursor-blink 0.85s step-end infinite;
+}
+
+@keyframes offline-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container,
+  .logo-wrap,
+  .logo-wrap img,
+  .search-bar,
+  .search-bar-input::after,
+  h1#offline-heading,
+  p#offline-body,
+  .buttons,
+  .btn,
+  .btn-primary,
+  .btn-primary::after {
+    animation: none !important;
+  }
+
+  .search-bar-input::after {
+    display: none;
+  }
+
+  .btn:hover,
+  .btn:focus-visible,
+  .search-bar-btn:hover {
+    transform: none;
+  }
+}

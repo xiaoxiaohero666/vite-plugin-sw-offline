@@ -43,7 +43,8 @@ vitePluginSwOffline({
 | `useApiGateway` / `productCode` | **已删除**，不再注入 SW；探测 URL 统一由业务 `networkProbeUrl`（字符串或回调）传入完整地址。 |
 | `networkProbeUrl` | 支持 `string \| (ctx) => string`；空则不注入，SW 默认同源探测 `sw.js`。README 含 `buildSwNetworkProbeUrl` 参考实现（网关/非网关）。 |
 | `serviceWorker` | 对象字段：`apiTimeout`、`imageCacheMaxItems` 等，对应 `sw.js` 里 `__SW_RT_*__` 占位符。 |
-| 离线页背景 | **全屏 `body` + `background-size: cover` + `top center`**，无媒体查询窄栏方案。 |
+| 离线页背景 | default：**全屏 `body` + `background-size: cover` + `top center`**。皮肤 `aurora` 等为纯 CSS 渐变，不依赖 jpg。 |
+| `offlineSkin` | 内置 `templates/skins/<id>/offline.html`；优先级低于 `offlineTemplatePath`。导出 `listBuiltinOfflineSkins` 等。 |
 | `define` 陷阱 | 业务 `vite.config` **不要**写 `define: { 'process.env': { APP_ENV, IS_APP } }` 整对象替换，会抹掉 `NODE_ENV`，导致 dev 下 `process.env.NODE_ENV === 'development'` 的 console 失效。应分别 `process.env.APP_ENV` / `IS_APP`。 |
 
 ## npm 发布状态
@@ -56,8 +57,9 @@ vitePluginSwOffline({
 ```
 src/index.js
 runtime/sw.js | sw-register.js | sw-noop.js
-templates/default/offline.html
-assets/offline-bg.jpg
+templates/shared/offline-i18n.json + offline-common.js
+templates/default/offline.html + templates/skins/<id>/offline.html  # 仅结构样式；脚本占位 __OFFLINE_PAGE_SCRIPT__
+assets/offline-bg.jpg                 # default 皮肤用
 README.md          # 用户文档（完整）
 HANDOFF.md         # 本文件（AI/维护者上下文）
 ```

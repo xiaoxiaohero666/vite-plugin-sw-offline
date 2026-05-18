@@ -16,6 +16,7 @@
 - [SW 缓存策略简述](#sw-缓存策略简述)
 - [页面侧 API（window.swCache）](#页面侧-apiwindowswcache)
 - [程序化导出](#程序化导出)
+- [离线页皮肤](#离线页皮肤)
 - [自定义离线页](#自定义离线页)
 - [包内文件结构](#包内文件结构)
 - [发布到 npm](#发布到-npm)
@@ -25,7 +26,7 @@
 | 能力 | 说明 |
 |------|------|
 | **Service Worker** | 内置 `runtime/sw.js`：带 hash 静态资源、图片 SWR、可配置 API 白名单、导航离线兜底等 |
-| **离线页** | 默认 `templates/default/offline.html`，支持自定义模板；可注入 Logo、域名 |
+| **离线页** | 默认 `templates/default/offline.html`；内置多套皮肤（`offlineSkin`）；也支持自定义 HTML；可注入 Logo、域名 |
 | **默认背景图** | 包内 `assets/offline-bg.jpg` → 产出 `static/offline-bg.jpg`，与离线页 CSS 一致 |
 | **注册脚本** | `sw-register.js` 注册 SW 并挂载 `window.swCache`；`sw-noop.js` 用于卸载场景 |
 | **uni-app** | 识别 CLI `vite build --outDir xxx`，写入实际产出目录 |
@@ -65,6 +66,8 @@ export default defineConfig({
       offlineLogoPath: '/static/logos/your-logo.png',
       // 离线页打字机展示的域名文案
       offlineDomain: 'https://www.example.com',
+      // 内置皮肤（与 offlineTemplatePath 二选一，路径优先）
+      // offlineSkin: 'aurora',
       // 可走 SWR 的 API 路径白名单（pathname 包含即匹配）；不传则为空
       cacheableApiPaths: ['/user/getUserInfo.do', '/config/queryConfig.do'],
       // 导航前外网探测 URL，空则探测同源 /sw.js；见「维护接口探测」
@@ -267,7 +270,8 @@ vitePluginSwOffline({
 | `networkProbeUrl` | `string \| (ctx) => string` | 见 [维护接口探测](#维护接口探测networkprobeurl)。 |
 | `offlineLogoPath` | `string` | 离线页 `__OFFLINE_LOGO__` 与 SW 预缓存 Logo；支持 `https://`、根路径 `/`、`?v=`。 |
 | `offlineDomain` | `string` | 离线页打字机文案 `__OFFLINE_DOMAIN__`。 |
-| `offlineTemplatePath` | `string` | 自定义离线页 HTML（绝对路径或相对 `process.cwd()`）。不存在则回退默认模板。 |
+| `offlineSkin` | `string` | 使用包内置皮肤 id（如 `aurora` → `templates/skins/aurora/offline.html`）。与 `offlineTemplatePath` 同时配置时，**以路径为准**。 |
+| `offlineTemplatePath` | `string` | 自定义离线页 HTML（绝对路径或相对 `process.cwd()`）。不存在则尝试 `offlineSkin`，再回退 default。 |
 | `cacheableApiPaths` | `string[]` | API 路径白名单（pathname 包含即走 SWR）。不传则为空列表。 |
 | `robotsTxtContent` | `string` | 非空时覆盖产出目录 `robots.txt`。 |
 | `serviceWorker` | `object` | SW 数值参数，见下表。 |
@@ -302,8 +306,11 @@ resolveServiceWorker({ serviceWorker: { apiTimeout: 5000 } });
 | `sw.js` | `__OFFLINE_LOGO_PATH__` | `offlineLogoPath`（规范化） |
 | `sw.js` | `__SW_RT_*__` | `serviceWorker` 各字段 |
 | `sw-register.js` | `__SW_VERSION__` | `swVersion` |
+| `offline.html` | `__OFFLINE_PAGE_STYLES__` | `templates/shared/offline-ui-motion.css`（入场、按钮、输入框等动效） |
+| `offline.html` | `__OFFLINE_PAGE_SCRIPT__` | 引导变量 + `templates/shared/offline-common.js`（i18n、打字机、复制、客服） |
 | `offline.html` | `__OFFLINE_LOGO__` | `offlineLogoPath` |
-| `offline.html` | `__OFFLINE_DOMAIN__` | `offlineDomain` |
+| `offline.html` | `__OFFLINE_DOMAIN__` | 写入 `window.__OFFLINE_DOMAIN_TEXT__`（仅旧模板占位符） |
+| `offline.html` | `__OFFLINE_I18N_INJECT__` | 已废弃，自定义旧模板仍兼容 |
 | `index.html` | `__SW_REGISTER_VERSION__` | `swVersion` |
 
 ## SW 缓存策略简述
@@ -337,6 +344,13 @@ import {
   getRuntimeDir,
   getDefaultOfflineTemplatePath,
   getDefaultOfflineBackgroundPath,
+  getOfflineSharedDir,
+  buildOfflinePageScript,
+  loadOfflineI18nMessages,
+  getOfflineSkinsDir,
+  listBuiltinOfflineSkins,
+  getOfflineSkinTemplatePath,
+  resolveOfflineTemplatePath,
   getDefaultCacheableApiPaths,
   getDefaultServiceWorker,
   resolveServiceWorker,
@@ -351,20 +365,112 @@ import {
 | `getRuntimeDir()` | 包内 `runtime/` 绝对路径 |
 | `getDefaultOfflineTemplatePath()` | 默认离线页模板路径 |
 | `getDefaultOfflineBackgroundPath()` | 默认背景图路径 |
+| `getOfflineSharedDir()` | 公用资源目录 `templates/shared` |
+| `buildOfflinePageScript(options)` | 生成可注入的离线页脚本字符串 |
+| `loadOfflineI18nMessages()` | 读取公用 i18n 对象 |
+| `getOfflineSkinsDir()` | 内置皮肤根目录 `templates/skins` |
+| `listBuiltinOfflineSkins()` | 当前包内可用皮肤 id 数组 |
+| `getOfflineSkinTemplatePath(id)` | 某皮肤的 `offline.html` 绝对路径，不存在为 `null` |
+| `resolveOfflineTemplatePath(options)` | 按插件规则解析最终模板路径 |
 | `getDefaultCacheableApiPaths()` | 默认 API 白名单副本（空数组） |
 | `getDefaultServiceWorker()` | `serviceWorker` 默认值 |
 | `resolveServiceWorker(partial)` | 合并默认值 |
 | `normalizeOfflineLogoPath(raw)` | Logo 路径规范化 |
 | `injectOfflineHtml(html, options)` | 仅注入离线页占位符 |
 
+## 离线页皮肤
+
+插件在包内提供多套离线页样式，通过 **`offlineSkin`** 选用，无需把 HTML 拷到业务仓库。
+
+### 选用方式
+
+```ts
+vitePluginSwOffline({
+  offlineSkin: 'aurora', // 内置皮肤 id
+  offlineLogoPath: '/static/logos/your-logo.png',
+  offlineDomain: 'www.example.com',
+  cacheableApiPaths: ['/user/getUserInfo.do'],
+});
+```
+
+**优先级**（高 → 低）：
+
+1. `offlineTemplatePath` — 业务自定义 HTML 绝对/相对路径  
+2. `offlineSkin` — 包内 `templates/skins/<id>/offline.html`  
+3. `templates/default/offline.html` — 默认深蓝 + 背景图
+
+启动或构建时终端会打印实际使用的模板路径，例如：
+
+```text
+[vite-plugin-sw-offline] offline template (skin:aurora): .../templates/skins/aurora/offline.html
+```
+
+### 当前内置皮肤
+
+| id | 风格 | 说明 |
+|----|------|------|
+| `aurora` | 深色 · 极光 | 紫青渐变、星点、毛玻璃域名条 |
+| `sunset` | 深色 · 暮色 | 橙红暖色日落、圆角胶囊按钮 |
+| `ocean` | 深色 · 深海 | 蓝青海浪光晕、简约直角卡片 |
+| `neon` | 深色 · 赛博 | 霓虹描边、等宽域名、扫描线质感 |
+| `minimal` | 浅色 · 极简 | 白灰网格底、清爽描边按钮 |
+| `galaxy` | 深色 · 星空 | 旋转星云、闪烁星点、流星划过 |
+| `matrix` | 深色 · 矩阵 | 数字雨网格、扫描线、绿色荧光 |
+| `liquid` | 深色 · 流体 | 三色光斑模糊漂移（blob 动画） |
+| `cybergrid` | 深色 · 赛博网格 | 3D 透视网格奔流、地平线光带脉冲 |
+| `prism` | 深色 · 棱镜 | 旋转彩虹锥光、流光标题与渐变描边 |
+
+以上皮肤均为 **纯 CSS 背景/动画**，不依赖 `offline-bg.jpg`；支持 `prefers-reduced-motion` 降级；域名条右侧为**复制图标**。
+
+所有内置模板均注入公用 UI 动效（`templates/shared/offline-ui-motion.css`）：入场渐显、Logo 浮动、域名条光晕/扫光、标题微光、按钮脉冲与悬停反馈等；各皮肤另有独立背景动画与 `--offline-glow*` 主题色变量。
+
+列出本机已安装包内全部皮肤 id：
+
+```ts
+import { listBuiltinOfflineSkins } from 'vite-plugin-sw-offline';
+
+console.log(listBuiltinOfflineSkins());
+// ['aurora', 'minimal', 'neon', 'ocean', 'sunset']
+```
+
+本地预览某套皮肤（无需跑 Vite）：在资源管理器中打开  
+`node_modules/vite-plugin-sw-offline/templates/skins/<id>/preview.html`  
+（仓库源码中路径为 `templates/skins/<id>/preview.html`）。
+
+### 与背景图的关系
+
+- **default** 模板使用 `url('/static/offline-bg.jpg')`，构建仍会复制包内 `assets/offline-bg.jpg` 到产出目录，并由 SW 预缓存。  
+- **aurora** 等纯 CSS 皮肤可不引用该图；背景文件仍会复制，体积很小，一般可忽略。若需完全去掉，需改 SW 预缓存逻辑（见「自定义离线页」）。
+
 ## 自定义离线页
 
-通过 `offlineTemplatePath` 指定 HTML，占位符与默认模板相同：
+通过 `offlineTemplatePath` 指定业务侧 HTML（覆盖 `offlineSkin`）。**推荐**在 `</body>` 前使用与内置皮肤相同的占位符：
 
-- `__OFFLINE_LOGO__`
-- `__OFFLINE_DOMAIN__`
+```html
+<style>
+__OFFLINE_PAGE_STYLES__
+</style>
+<script>
+__OFFLINE_PAGE_SCRIPT__
+</script>
+```
 
-背景图路径建议仍使用 `/static/offline-bg.jpg`（与 SW 预缓存一致），或自行改模板并同步调整 SW 预缓存逻辑。
+插件会注入公用 UI 动效（`offline-ui-motion.css`）、`window.__OFFLINE_I18N__`、`window.__OFFLINE_DOMAIN_TEXT__` 及公用逻辑（`offline-common.js`）。皮肤样式块写在第一个 `<style>` 中即可，可通过 `:root` 覆盖 `--offline-glow` 等变量。文案维护在 **`templates/shared/offline-i18n.json`**（所有皮肤共用）。
+
+自定义模板须保留以下 **DOM id**（仅结构/样式可自由调整）：
+
+| id | 用途 |
+|----|------|
+| `logoWrap` | Logo 容器（`img` 使用 `__OFFLINE_LOGO__`） |
+| `typingText` | 域名打字机 |
+| `copyDomainBtn` | 复制域名按钮 |
+| `offline-heading` / `offline-body` | 标题与说明 |
+| `contactBtn` / `reloadBtn` | 客服 / 刷新 |
+| `copyToast` | 复制成功提示 |
+
+另支持旧占位符（不推荐新模板使用）：`__OFFLINE_LOGO__`、`__OFFLINE_DOMAIN__`、`__OFFLINE_I18N_INJECT__`。
+
+使用 **default** 皮肤或自带背景图时，CSS 建议仍写 `/static/offline-bg.jpg`（与 SW 预缓存一致）。纯 CSS 背景的皮肤可省略该 URL。
 
 ## 包内文件结构
 
@@ -375,10 +481,22 @@ vite-plugin-sw-offline/
 │   ├── sw.js             # Service Worker 主逻辑
 │   ├── sw-register.js    # 注册与 window.swCache
 │   └── sw-noop.js        # 空 SW（卸载用）
-├── templates/default/
-│   └── offline.html      # 默认离线页
+├── templates/
+│   ├── shared/
+│   │   ├── offline-i18n.json      # 多语言文案（所有皮肤共用）
+│   │   ├── offline-common.js       # 公用交互脚本（构建时注入）
+│   │   └── offline-ui-motion.css   # 公用 UI 动效（构建时注入）
+│   ├── default/
+│   │   └── offline.html         # 默认离线页（仅样式 + 结构）
+│   └── skins/
+│       ├── aurora/   # offlineSkin: 'aurora'
+│       ├── sunset/   # offlineSkin: 'sunset'
+│       ├── ocean/    # offlineSkin: 'ocean'
+│       ├── neon/     # offlineSkin: 'neon'
+│       ├── minimal/  # offlineSkin: 'minimal'
+│       └── */preview.html  # 可选；改皮肤后运行 node scripts/build-offline-previews.js
 ├── assets/
-│   └── offline-bg.jpg    # 默认背景图
+│   └── offline-bg.jpg    # default 皮肤背景图
 └── README.md
 ```
 

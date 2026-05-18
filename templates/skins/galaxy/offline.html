@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>网络连接失败</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+      --offline-glow: rgba(167, 139, 250, 0.5);
+      --offline-glow-soft: rgba(139, 92, 246, 0.2);
+      --offline-shine: rgba(255,255,255,0.3);
+    }
+
+
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      color: #f8fafc;
+      background: #030014;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bg-fx {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .nebula {
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      left: -25%;
+      top: -25%;
+      background:
+        radial-gradient(ellipse 40% 30% at 30% 40%, rgba(139, 92, 246, 0.35) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 25% at 70% 60%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse 30% 35% at 50% 80%, rgba(236, 72, 153, 0.2) 0%, transparent 50%);
+      animation: nebula-spin 40s linear infinite;
+    }
+
+    @keyframes nebula-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .stars {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 10% 20%, #fff 0%, transparent 100%),
+        radial-gradient(1px 1px at 30% 65%, rgba(255,255,255,.9) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 55% 15%, #fff 0%, transparent 100%),
+        radial-gradient(1px 1px at 72% 48%, rgba(255,255,255,.7) 0%, transparent 100%),
+        radial-gradient(1px 1px at 88% 78%, #fff 0%, transparent 100%),
+        radial-gradient(1px 1px at 18% 88%, rgba(255,255,255,.8) 0%, transparent 100%),
+        radial-gradient(1px 1px at 42% 38%, #fff 0%, transparent 100%),
+        radial-gradient(1px 1px at 95% 22%, rgba(255,255,255,.6) 0%, transparent 100%);
+      animation: stars-twinkle 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes stars-twinkle {
+      0% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    .shooting-star {
+      position: absolute;
+      width: 120px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #fff, transparent);
+      top: 18%;
+      left: -120px;
+      transform: rotate(-18deg);
+      opacity: 0;
+      animation: shoot 7s ease-in-out infinite;
+    }
+
+    @keyframes shoot {
+      0%, 78% { opacity: 0; transform: translateX(0) rotate(-18deg); }
+      82% { opacity: 1; }
+      100% { opacity: 0; transform: translateX(130vw) rotate(-18deg); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-wrap { margin-bottom: 28px; }
+    .logo-wrap img {
+      width: 108px;
+      border-radius: 22px;
+      box-shadow: 0 0 40px rgba(139, 92, 246, 0.35);
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      width: min(100%, 340px);
+      height: 48px;
+      padding: 0 6px 0 16px;
+      border-radius: 14px;
+      background: rgba(15, 10, 40, 0.65);
+      border: 1px solid rgba(167, 139, 250, 0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      margin-bottom: 32px;
+      gap: 8px;
+    }
+
+    .search-bar-input {
+      flex: 1;
+      min-width: 0;
+      color: #c4b5fd;
+      font-size: 17px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .search-bar-btn {
+      width: 40px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: rgba(139, 92, 246, 0.35);
+      color: #e9d5ff;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .search-bar-btn:active { transform: scale(0.94); }
+    .search-bar-btn svg { width: 18px; height: 18px; }
+
+    .typing-cursor {
+      display: inline-block;
+      animation: blink 0.8s step-end infinite;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      text-shadow: 0 0 30px rgba(167, 139, 250, 0.5);
+    }
+
+    p {
+      font-size: 14px;
+      color: rgba(248, 250, 252, 0.65);
+      margin-bottom: 36px;
+      line-height: 1.75;
+    }
+
+    .buttons { display: flex; gap: 14px; width: 100%; justify-content: center; }
+
+    .btn {
+      flex: 1;
+      max-width: 168px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e9d5ff;
+      border: 1px solid rgba(167, 139, 250, 0.3);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      color: #fff;
+      box-shadow: 0 0 28px rgba(99, 102, 241, 0.5);
+    }
+
+    .copy-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 48px;
+      transform: translateX(-50%);
+      padding: 12px 22px;
+      border-radius: 12px;
+      background: rgba(15, 10, 40, 0.95);
+      border: 1px solid rgba(167, 139, 250, 0.4);
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 1000;
+    }
+
+    .copy-toast.show { opacity: 1; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .nebula, .stars, .shooting-star { animation: none; }
+      .nebula { transform: none; }
+      .stars { opacity: 0.85; }
+    }
+
+    /* skin-motion */
+    .nebula { animation-duration: 32s; }
+    .shooting-star { animation-duration: 5.5s; }
+  </style>
+  <style>
+__OFFLINE_PAGE_STYLES__
+  </style>
+</head>
+<body>
+  <div class="bg-fx" aria-hidden="true">
+    <div class="nebula"></div>
+    <div class="stars"></div>
+    <div class="shooting-star"></div>
+  </div>
+
+  <div class="container">
+    <div class="logo-wrap" id="logoWrap">
+      <img src="__OFFLINE_LOGO__" alt="" onerror="document.getElementById('logoWrap').style.display='none'" />
+    </div>
+    <div class="search-bar">
+      <div class="search-bar-input">
+        <span id="typingText"></span><span class="typing-cursor">|</span>
+      </div>
+      <div class="search-bar-btn" id="copyDomainBtn" role="button" tabindex="0" aria-label="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </div>
+    </div>
+    <h1 id="offline-heading">网络连接失败</h1>
+    <p id="offline-body">请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
+    <div class="buttons">
+      <a class="btn btn-secondary" href="javascript:void(0)" id="contactBtn">联系客服</a>
+      <button type="button" class="btn btn-primary" id="reloadBtn" onclick="location.reload()">重新加载</button>
+    </div>
+  </div>
+  <div class="copy-toast" id="copyToast" aria-live="polite"></div>
+  <script>
+__OFFLINE_PAGE_SCRIPT__
+  </script>
+</body>
+</html>

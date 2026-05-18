@@ -5,37 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>网络连接失败</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-      --offline-glow: rgba(68, 122, 254, 0.55);
-      --offline-glow-soft: rgba(68, 122, 254, 0.22);
-      --offline-shine: rgba(255, 255, 255, 0.35);
+      --offline-glow: rgba(15, 23, 42, 0.18);
+      --offline-glow-soft: rgba(15, 23, 42, 0.08);
+      --offline-shine: rgba(255,255,255,0.12);
     }
 
 
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: #131529;
-      background-image: url('/static/offline-bg.jpg');
-      background-size: cover;
-      background-position: top center;
-      background-repeat: no-repeat;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 0 20px;
-      color: #ffffff;
+      color: #1e293b;
+      background-color: #f8fafc;
+      background-image:
+        radial-gradient(circle at 20% 10%, rgba(148, 163, 184, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 80% 90%, rgba(148, 163, 184, 0.1) 0%, transparent 45%),
+        linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
     }
 
     .container {
+      position: relative;
+      z-index: 1;
       text-align: center;
       max-width: 400px;
       width: 100%;
@@ -44,73 +55,68 @@
       align-items: center;
     }
 
-    /* 品牌 LOGO */
-    .logo-wrap {
-      margin-bottom: 20px;
-    }
+    .logo-wrap { margin-bottom: 28px; }
 
     .logo-wrap img {
-      width: 120px;
+      width: 96px;
       height: auto;
       display: block;
       border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
     }
 
-    /* 模拟浏览器搜索框 */
     .search-bar {
       display: flex;
       align-items: center;
-      justify-content: center;
-      width: 324px;
-      height: 36px;
-      border-radius: 18px;
-      border: 1px solid #447AFE;
-      background: #0E1628;
-      margin-bottom: 24px;
+      width: min(100%, 340px);
+      height: 50px;
+      padding: 0 6px 0 16px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 32px;
+      gap: 8px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
     }
 
     .search-bar-input {
-      width: 260px;
-      height: 28px;
-      border-radius: 18px;
-      background: #FFF;
+      flex: 1;
+      min-width: 0;
       display: flex;
       align-items: center;
-      padding: 0 14px;
-      color: #4077FF;
-      font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      font-size: 20px;
+      color: #0f172a;
+      font-size: 16px;
       font-weight: 600;
-      line-height: normal;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-left: 5px;
     }
 
     .search-bar-btn {
-      flex: 1;
-      height: 100%;
+      flex-shrink: 0;
+      width: 40px;
+      height: 38px;
       display: flex;
       align-items: center;
       justify-content: center;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+      background: #f1f5f9;
+      color: #475569;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .search-bar-btn svg {
-      width: 18px;
-      height: 18px;
-      color: rgba(255, 255, 255, 0.7);
-    }
+    .search-bar-btn:hover { background: #e2e8f0; color: #0f172a; }
+    .search-bar-btn:active { transform: scale(0.94); }
+    .search-bar-btn svg { width: 18px; height: 18px; }
 
-    /* 打字机光标闪烁 */
     .typing-cursor {
       display: inline-block;
-      color: #4077FF;
-      font-weight: 400;
+      color: #64748b;
       animation: blink 0.8s step-end infinite;
-      margin-left: 1px;
+      margin-left: 2px;
     }
 
     @keyframes blink {
@@ -120,59 +126,55 @@
 
     h1 {
       font-size: 22px;
-      font-weight: 600;
-      margin-bottom: 16px;
-      color: #ffffff;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #0f172a;
+      letter-spacing: -0.02em;
     }
 
     p {
       font-size: 14px;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 40px;
-      line-height: 1.8;
-      padding: 0 10px;
+      color: #64748b;
+      margin-bottom: 36px;
+      line-height: 1.75;
     }
 
     .buttons {
       display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
+      gap: 12px;
       width: 100%;
+      justify-content: center;
     }
 
     .btn {
       flex: 1;
-      max-width: 170px;
+      max-width: 168px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 14px 20px;
-      font-size: 15px;
-      font-weight: 500;
-      border: none;
-      border-radius: 100px;
-      cursor: pointer;
-      text-decoration: none;
-      transition: opacity 0.2s;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
       -webkit-tap-highlight-color: transparent;
     }
 
-    .btn:active {
-      opacity: 0.8;
-    }
+    .btn:active { transform: scale(0.97); }
 
     .btn-secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #e2e8f0;
     }
 
     .btn-primary {
-      background: linear-gradient(180deg, #6591FD 0%, #3D75FF 100%);
+      background: #0f172a;
       color: #ffffff;
-      box-shadow: 0 4px 16px rgba(74, 124, 255, 0.3);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
     }
 
     .copy-toast {
@@ -180,51 +182,29 @@
       left: 50%;
       bottom: 48px;
       transform: translateX(-50%);
-      padding: 10px 20px;
-      border-radius: 8px;
-      background: rgba(0, 0, 0, 0.78);
-      color: #ffffff;
+      padding: 12px 22px;
+      border-radius: 10px;
+      background: #0f172a;
+      color: #f8fafc;
       font-size: 14px;
-      line-height: 1.4;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s ease;
       z-index: 1000;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
     }
 
-    .copy-toast.show {
-      opacity: 1;
-    }
+    .copy-toast.show { opacity: 1; }
     /* skin-motion */
-    body {
-      position: relative;
-      animation: default-bg-drift 22s ease-in-out infinite alternate;
-    }
     body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      background: linear-gradient(
-        125deg,
-        rgba(68, 122, 254, 0.18) 0%,
-        transparent 45%,
-        rgba(99, 102, 241, 0.12) 100%
-      );
-      animation: default-overlay-shift 10s ease-in-out infinite alternate;
+      animation: minimal-grid-shift 20s linear infinite;
     }
-    .container { position: relative; z-index: 1; }
-    @keyframes default-bg-drift {
-      0% { background-size: 100% auto; }
-      100% { background-size: 108% auto; }
+    @keyframes minimal-grid-shift {
+      to { background-position: 24px 24px; }
     }
-    @keyframes default-overlay-shift {
-      0% { opacity: 0.65; }
-      100% { opacity: 1; }
-    }
+    .search-bar-input::after { opacity: 0.2; }
     @media (prefers-reduced-motion: reduce) {
-      body, body::before { animation: none; }
+      body::before { animation: none; }
     }
   </style>
   <style>
@@ -233,12 +213,9 @@ __OFFLINE_PAGE_STYLES__
 </head>
 <body>
   <div class="container">
-    <!-- 品牌 LOGO（构建时注入路径，加载失败则隐藏） -->
     <div class="logo-wrap" id="logoWrap">
       <img src="__OFFLINE_LOGO__" alt="" onerror="document.getElementById('logoWrap').style.display='none'" />
     </div>
-
-    <!-- 模拟浏览器搜索框 -->
     <div class="search-bar">
       <div class="search-bar-input">
         <span id="typingText"></span><span class="typing-cursor">|</span>
@@ -250,16 +227,13 @@ __OFFLINE_PAGE_STYLES__
         </svg>
       </div>
     </div>
-
     <h1 id="offline-heading">网络连接失败</h1>
     <p id="offline-body">请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
-
     <div class="buttons">
       <a class="btn btn-secondary" href="javascript:void(0)" id="contactBtn">联系客服</a>
       <button type="button" class="btn btn-primary" id="reloadBtn" onclick="location.reload()">重新加载</button>
     </div>
   </div>
-
   <div class="copy-toast" id="copyToast" aria-live="polite"></div>
   <script>
 __OFFLINE_PAGE_SCRIPT__

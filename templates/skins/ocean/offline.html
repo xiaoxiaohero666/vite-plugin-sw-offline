@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>网络连接失败</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+      --offline-glow: rgba(34, 211, 238, 0.5);
+      --offline-glow-soft: rgba(8, 145, 178, 0.22);
+      --offline-shine: rgba(255,255,255,0.3);
+    }
+
+
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      color: #e0f2fe;
+      background-color: #021018;
+      background-image:
+        radial-gradient(ellipse 90% 40% at 50% 110%, rgba(6, 182, 212, 0.35) 0%, transparent 55%),
+        radial-gradient(ellipse 55% 35% at 15% 60%, rgba(59, 130, 246, 0.2) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 30% at 90% 25%, rgba(20, 184, 166, 0.18) 0%, transparent 48%),
+        linear-gradient(180deg, #021018 0%, #0c2d48 45%, #041220 100%);
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 45%;
+      background:
+        repeating-linear-gradient(
+          -8deg,
+          transparent,
+          transparent 40px,
+          rgba(34, 211, 238, 0.03) 40px,
+          rgba(34, 211, 238, 0.03) 41px
+        );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      width: 200%;
+      height: 120px;
+      left: -50%;
+      bottom: 18%;
+      background: radial-gradient(ellipse at center, rgba(34, 211, 238, 0.12) 0%, transparent 70%);
+      animation: wave-shift 8s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes wave-shift {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(8%); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-wrap { margin-bottom: 28px; }
+
+    .logo-wrap img {
+      width: 108px;
+      height: auto;
+      display: block;
+      border-radius: 22px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 36px rgba(34, 211, 238, 0.2);
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      width: min(100%, 340px);
+      height: 48px;
+      padding: 0 6px 0 16px;
+      border-radius: 12px;
+      background: rgba(6, 40, 62, 0.7);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      margin-bottom: 32px;
+      gap: 8px;
+    }
+
+    .search-bar-input {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      color: #67e8f9;
+      font-size: 17px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .search-bar-btn {
+      flex-shrink: 0;
+      width: 40px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: rgba(34, 211, 238, 0.2);
+      border: 1px solid rgba(34, 211, 238, 0.45);
+      color: #a5f3fc;
+      transition: transform 0.15s ease, background 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .search-bar-btn:active { transform: scale(0.94); background: rgba(34, 211, 238, 0.35); }
+    .search-bar-btn svg { width: 18px; height: 18px; }
+
+    .typing-cursor {
+      display: inline-block;
+      color: #67e8f9;
+      animation: blink 0.8s step-end infinite;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: #f0f9ff;
+    }
+
+    p {
+      font-size: 14px;
+      color: rgba(224, 242, 254, 0.68);
+      margin-bottom: 36px;
+      line-height: 1.75;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 14px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn {
+      flex: 1;
+      max-width: 168px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e0f2fe;
+      border: 1px solid rgba(34, 211, 238, 0.25);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0891b2 0%, #0284c7 50%, #06b6d4 100%);
+      color: #fff;
+      box-shadow: 0 6px 24px rgba(8, 145, 178, 0.45);
+    }
+
+    .copy-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 48px;
+      transform: translateX(-50%);
+      padding: 12px 22px;
+      border-radius: 10px;
+      background: rgba(6, 40, 62, 0.95);
+      border: 1px solid rgba(34, 211, 238, 0.4);
+      color: #e0f2fe;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 1000;
+    }
+
+    .copy-toast.show { opacity: 1; }
+    /* skin-motion */
+    body::after { animation-duration: 6s; }
+  </style>
+  <style>
+__OFFLINE_PAGE_STYLES__
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-wrap" id="logoWrap">
+      <img src="__OFFLINE_LOGO__" alt="" onerror="document.getElementById('logoWrap').style.display='none'" />
+    </div>
+    <div class="search-bar">
+      <div class="search-bar-input">
+        <span id="typingText"></span><span class="typing-cursor">|</span>
+      </div>
+      <div class="search-bar-btn" id="copyDomainBtn" role="button" tabindex="0" aria-label="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </div>
+    </div>
+    <h1 id="offline-heading">网络连接失败</h1>
+    <p id="offline-body">请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
+    <div class="buttons">
+      <a class="btn btn-secondary" href="javascript:void(0)" id="contactBtn">联系客服</a>
+      <button type="button" class="btn btn-primary" id="reloadBtn" onclick="location.reload()">重新加载</button>
+    </div>
+  </div>
+  <div class="copy-toast" id="copyToast" aria-live="polite"></div>
+  <script>
+__OFFLINE_PAGE_SCRIPT__
+  </script>
+
+</body>
+</html>

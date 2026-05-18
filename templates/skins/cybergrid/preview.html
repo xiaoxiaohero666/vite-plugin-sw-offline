@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>网络连接失败</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+      --offline-glow: rgba(34, 211, 238, 0.5);
+      --offline-glow-soft: rgba(168, 85, 247, 0.22);
+      --offline-shine: rgba(255,255,255,0.3);
+    }
+
+
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      color: #e0f2fe;
+      background: #020617;
+      overflow: hidden;
+      perspective: 400px;
+    }
+
+    .bg-fx {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .grid-floor {
+      position: absolute;
+      width: 200%;
+      height: 75%;
+      left: -50%;
+      bottom: -28%;
+      transform: rotateX(74deg);
+      transform-origin: center bottom;
+      background-image:
+        linear-gradient(rgba(34, 211, 238, 0.35) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34, 211, 238, 0.35) 1px, transparent 1px);
+      background-size: 48px 48px;
+      animation: grid-move 3s linear infinite;
+      mask-image: linear-gradient(to top, #000 18%, transparent 72%);
+      -webkit-mask-image: linear-gradient(to top, #000 18%, transparent 72%);
+    }
+
+    /* 顶部天光 + 两侧氛围，避免横线穿过中部按钮区 */
+    .sky-glow {
+      position: absolute;
+      top: -15%;
+      left: 50%;
+      width: 140%;
+      height: 42%;
+      transform: translateX(-50%);
+      background: radial-gradient(
+        ellipse 70% 80% at 50% 100%,
+        rgba(34, 211, 238, 0.22) 0%,
+        rgba(168, 85, 247, 0.1) 45%,
+        transparent 72%
+      );
+      animation: sky-breathe 6s ease-in-out infinite alternate;
+    }
+
+    .side-glow {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 28%;
+      opacity: 0.85;
+    }
+
+    .side-glow--left {
+      left: 0;
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.14) 0%, transparent 100%);
+    }
+
+    .side-glow--right {
+      right: 0;
+      background: linear-gradient(270deg, rgba(168, 85, 247, 0.14) 0%, transparent 100%);
+    }
+
+    @keyframes grid-move {
+      to { background-position: 0 48px; }
+    }
+
+    @keyframes sky-breathe {
+      0% { opacity: 0.75; transform: translateX(-50%) scale(1); }
+      100% { opacity: 1; transform: translateX(-50%) scale(1.04); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px;
+      border-radius: 8px;
+      background: rgba(2, 6, 23, 0.55);
+      border: 1px solid rgba(34, 211, 238, 0.12);
+      box-shadow: 0 0 48px rgba(2, 6, 23, 0.6);
+    }
+
+    .logo-wrap { margin-bottom: 28px; }
+    .logo-wrap img {
+      width: 108px;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(34, 211, 238, 0.35);
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      width: min(100%, 340px);
+      height: 48px;
+      padding: 0 6px 0 16px;
+      border-radius: 4px;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid #22d3ee;
+      box-shadow: 0 0 16px rgba(34, 211, 238, 0.2), inset 0 0 12px rgba(34, 211, 238, 0.05);
+      margin-bottom: 32px;
+      gap: 8px;
+    }
+
+    .search-bar-input {
+      flex: 1;
+      min-width: 0;
+      color: #67e8f9;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: ui-monospace, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .search-bar-btn {
+      width: 40px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #a855f7;
+      border-radius: 2px;
+      cursor: pointer;
+      background: rgba(168, 85, 247, 0.2);
+      color: #e9d5ff;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .search-bar-btn:active { transform: scale(0.94); }
+    .search-bar-btn svg { width: 18px; height: 18px; }
+
+    .typing-cursor { color: #a855f7; animation: blink 0.8s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+    }
+
+    p { font-size: 14px; color: rgba(224, 242, 254, 0.6); margin-bottom: 36px; line-height: 1.75; }
+
+    .buttons { display: flex; gap: 14px; width: 100%; justify-content: center; }
+
+    .btn {
+      flex: 1;
+      max-width: 168px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-secondary {
+      background: transparent;
+      color: #67e8f9;
+      border: 1px solid rgba(34, 211, 238, 0.5);
+    }
+
+    .btn-primary {
+      background: linear-gradient(90deg, #0891b2, #7c3aed);
+      color: #fff;
+      border: none;
+      box-shadow: 0 0 24px rgba(34, 211, 238, 0.35);
+    }
+
+    .copy-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 48px;
+      transform: translateX(-50%);
+      padding: 12px 22px;
+      border-radius: 2px;
+      background: rgba(2, 6, 23, 0.95);
+      border: 1px solid #22d3ee;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 1000;
+    }
+
+    .copy-toast.show { opacity: 1; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .grid-floor, .sky-glow { animation: none; }
+      .sky-glow { opacity: 0.85; transform: translateX(-50%); }
+    }
+
+    /* skin-motion */
+    .grid-floor { animation-duration: 2.4s; }
+    .sky-glow { animation-duration: 5s; }
+  </style>
+  <style>
+/**
+ * 离线页公用 UI 动效（构建时注入，置于各皮肤样式之后）
+ * 皮肤可通过 :root 覆盖变量：
+ * --offline-glow / --offline-glow-soft / --offline-shine
+ */
+:root {
+  --offline-glow: rgba(99, 102, 241, 0.55);
+  --offline-glow-soft: rgba(99, 102, 241, 0.2);
+  --offline-shine: rgba(255, 255, 255, 0.35);
+}
+
+@keyframes offline-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes offline-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes offline-bar-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 var(--offline-glow-soft),
+      inset 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 20px 0 var(--offline-glow-soft),
+      inset 0 0 12px 0 var(--offline-glow-soft);
+  }
+}
+
+@keyframes offline-input-shimmer {
+  0% { background-position: 120% 0; }
+  100% { background-position: -40% 0; }
+}
+
+@keyframes offline-heading-glow {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 10px var(--offline-glow-soft)); }
+}
+
+@keyframes offline-btn-primary-pulse {
+  0%, 100% { box-shadow: 0 4px 16px var(--offline-glow-soft); }
+  50% { box-shadow: 0 6px 28px var(--offline-glow); }
+}
+
+@keyframes offline-btn-shine {
+  0% { left: -100%; }
+  100% { left: 120%; }
+}
+
+.container {
+  animation: offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.logo-wrap {
+  animation: offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
+}
+
+.logo-wrap img {
+  animation: offline-logo-float 4.5s ease-in-out infinite;
+}
+
+.search-bar {
+  animation:
+    offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both,
+    offline-bar-glow 3.2s ease-in-out infinite;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.search-bar:active {
+  transform: scale(0.99);
+}
+
+.search-bar-input {
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.search-bar-input::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    var(--offline-shine) 50%,
+    transparent 65%
+  );
+  background-size: 200% 100%;
+  animation: offline-input-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.search-bar-btn {
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.search-bar-btn:hover,
+.search-bar-btn:focus-visible {
+  transform: scale(1.06);
+  box-shadow: 0 0 14px var(--offline-glow-soft);
+}
+
+.search-bar-btn:active {
+  transform: scale(0.94);
+}
+
+h1#offline-heading {
+  animation:
+    offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both,
+    offline-heading-glow 3.5s ease-in-out infinite;
+}
+
+p#offline-body {
+  animation: offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+}
+
+.buttons {
+  animation: offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+
+.btn {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+.btn:hover,
+.btn:focus-visible {
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.btn-primary {
+  animation: offline-btn-primary-pulse 2.8s ease-in-out infinite;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--offline-shine), transparent);
+  animation: offline-btn-shine 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  box-shadow: 0 0 16px var(--offline-glow-soft);
+}
+
+.copy-toast {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.copy-toast.show {
+  transform: translateX(-50%) translateY(-6px);
+}
+
+.typing-cursor {
+  animation: offline-cursor-blink 0.85s step-end infinite;
+}
+
+@keyframes offline-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container,
+  .logo-wrap,
+  .logo-wrap img,
+  .search-bar,
+  .search-bar-input::after,
+  h1#offline-heading,
+  p#offline-body,
+  .buttons,
+  .btn,
+  .btn-primary,
+  .btn-primary::after {
+    animation: none !important;
+  }
+
+  .search-bar-input::after {
+    display: none;
+  }
+
+  .btn:hover,
+  .btn:focus-visible,
+  .search-bar-btn:hover {
+    transform: none;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <div class="bg-fx" aria-hidden="true">
+    <div class="sky-glow"></div>
+    <div class="side-glow side-glow--left"></div>
+    <div class="side-glow side-glow--right"></div>
+    <div class="grid-floor"></div>
+  </div>
+  <div class="container">
+    <div class="logo-wrap" id="logoWrap"><div class="logo-demo" style="width:88px;height:88px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;margin:0 auto;background:#020617;color:#22d3ee;border:1px solid #22d3ee;box-shadow:0 0 16px rgba(34,211,238,.4)" aria-hidden="true">A</div></div><div class="search-bar">
+      <div class="search-bar-input">
+        <span id="typingText"></span><span class="typing-cursor">|</span>
+      </div>
+      <div class="search-bar-btn" id="copyDomainBtn" role="button" tabindex="0" aria-label="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </div>
+    </div>
+    <h1 id="offline-heading">网络连接失败</h1>
+    <p id="offline-body">请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
+    <div class="buttons">
+      <a class="btn btn-secondary" href="javascript:void(0)" id="contactBtn">联系客服</a>
+      <button type="button" class="btn btn-primary" id="reloadBtn" onclick="location.reload()">重新加载</button>
+    </div>
+  </div>
+  <div class="copy-toast" id="copyToast" aria-live="polite"></div>
+  <script>
+window.__OFFLINE_I18N__ = {"ar_SA":{"title":"فشل الاتصال بالشبكة","heading":"فشل الاتصال بالشبكة","body":"يرجى التحقق من إعدادات الشبكة ثم المحاولة مرة أخرى، أو الاتصال بخدمة العملاء للمساعدة. إذا تعذّر إعادة الاتصال، يرجى الانتظار قليلاً والمحاولة لاحقًا.","contact":"خدمة العملاء","reload":"إعادة التحميل","copyAria":"نسخ اسم النطاق","copySuccess":"تم النسخ!","copyFail":"فشل النسخ، يرجى النسخ يدويًا.","contactOfflineHint":"يرجى التواصل مع خدمة العملاء بعد عودة الاتصال."},"en_US":{"title":"Network connection failed","heading":"Network connection failed","body":"Please check your network settings and try again, or contact customer support for help. If the connection cannot be restored, please wait and try again later.","contact":"Contact support","reload":"Reload","copyAria":"Copy domain","copySuccess":"Copied!","copyFail":"Copy failed. Please copy manually.","contactOfflineHint":"Please contact customer support after your connection is restored."},"hi_IN":{"title":"नेटवर्क कनेक्शन विफल","heading":"नेटवर्क कनेक्शन विफल","body":"कृपया अपनी नेटवर्क सेटिंग जाँचकर पुनः प्रयास करें, या सहायता के लिए ग्राहक सेवा से संपर्क करें। यदि कनेक्शन बहाल नहीं हो पाता है, कृपया प्रतीक्षा करें और बाद में फिर कोशिश करें।","contact":"ग्राहक सेवा","reload":"पुनः लोड करें","copyAria":"डोमेन कॉपी करें","copySuccess":"कॉपी हो गया!","copyFail":"कॉपी विफल। कृपया मैन्युअली कॉपी करें।","contactOfflineHint":"कनेक्शन बहाल होने के बाद कृपया ग्राहक सेवा से संपर्क करें।"},"ja_JP":{"title":"ネットワーク接続に失敗しました","heading":"ネットワーク接続に失敗しました","body":"ネットワーク設定を確認してから再度お試しいただくか、カスタマーサポートまでお問い合わせください。接続が復旧しない場合は、しばらく時間をおいてから再度お試しください。","contact":"サポートに連絡","reload":"再読み込み","copyAria":"ドメインをコピー","copySuccess":"コピーしました！","copyFail":"コピーに失敗しました。手動でコピーしてください。","contactOfflineHint":"接続が復旧しましたら、カスタマーサポートにお問い合わせください。"},"ko_KR":{"title":"네트워크 연결 실패","heading":"네트워크 연결 실패","body":"네트워크 설정을 확인한 뒤 다시 시도하거나 고객 지원에 문의해 주세요. 연결이 복구되지 않으면 잠시 후 다시 시도해 주세요.","contact":"고객 지원","reload":"새로고침","copyAria":"도메인 복사","copySuccess":"복사되었습니다!","copyFail":"복사에 실패했습니다. 직접 복사해 주세요.","contactOfflineHint":"연결이 복구된 후 고객 지원에 문의해 주세요."},"pt_BR":{"title":"Falha na conexão de rede","heading":"Falha na conexão de rede","body":"Verifique as configurações de rede e tente novamente ou entre em contato com o suporte ao cliente para obter ajuda. Se a conexão não for restaurada, aguarde e tente mais tarde.","contact":"Suporte","reload":"Recarregar","copyAria":"Copiar domínio","copySuccess":"Copiado!","copyFail":"Falha ao copiar. Copie manualmente.","contactOfflineHint":"Entre em contato com o suporte após a conexão ser restaurada."},"ru_RU":{"title":"Ошибка сетевого подключения","heading":"Ошибка сетевого подключения","body":"Проверьте настройки сети и повторите попытку или обратитесь в службу поддержки. Если подключение не восстанавливается, подождите немного и попробуйте снова позже.","contact":"Поддержка","reload":"Обновить","copyAria":"Копировать домен","copySuccess":"Скопировано!","copyFail":"Не удалось скопировать. Скопируйте вручную.","contactOfflineHint":"Обратитесь в поддержку после восстановления соединения."},"th_TH":{"title":"การเชื่อมต่อเครือข่ายล้มเหลว","heading":"การเชื่อมต่อเครือข่ายล้มเหลว","body":"โปรดตรวจสอบการตั้งค่าเครือข่ายแล้วลองอีกครั้ง หรือติดต่อฝ่ายบริการลูกค้าเพื่อขอความช่วยเหลือ หากยังเชื่อมต่อไม่ได้ โปรดรอสักครู่แล้วลองใหม่ภายหลัง","contact":"ติดต่อฝ่ายบริการ","reload":"โหลดใหม่","copyAria":"คัดลอกโดเมน","copySuccess":"คัดลอกแล้ว!","copyFail":"คัดลอกไม่สำเร็จ โปรดคัดลอกด้วยตนเอง","contactOfflineHint":"โปรดติดต่อฝ่ายบริการหลังจากเชื่อมต่อกลับมาได้"},"tr_TR":{"title":"Ağ bağlantısı başarısız","heading":"Ağ bağlantısı başarısız","body":"Lütfen ağ ayarlarınızı kontrol edip yeniden deneyin veya yardım için müşteri desteğiyle iletişime geçin. Bağlantı kurulamazsa lütfen bekleyip daha sonra tekrar deneyin.","contact":"Destek","reload":"Yeniden yükle","copyAria":"Alan adını kopyala","copySuccess":"Kopyalandı!","copyFail":"Kopyalanamadı. Lütfen elle kopyalayın.","contactOfflineHint":"Bağlantı düzeldiğinde müşteri desteğiyle iletişime geçin."},"vi_VN":{"title":"Kết nối mạng thất bại","heading":"Kết nối mạng thất bại","body":"Vui lòng kiểm tra cài đặt mạng và thử lại, hoặc liên hệ bộ phận hỗ trợ khách hàng để được giúp đỡ. Nếu không khôi phục được kết nối, hãy đợi một lúc rồi thử lại sau.","contact":"Liên hệ hỗ trợ","reload":"Tải lại","copyAria":"Sao chép tên miền","copySuccess":"Đã sao chép!","copyFail":"Sao chép thất bại. Vui lòng sao chép thủ công.","contactOfflineHint":"Vui lòng liên hệ hỗ trợ sau khi mạng đã khôi phục."},"zh_CN":{"title":"网络连接失败","heading":"网络连接失败","body":"请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。","contact":"联系客服","reload":"重新加载","copyAria":"复制域名","copySuccess":"复制成功！","copyFail":"复制失败，请手动复制","contactOfflineHint":"请在网络恢复后联系客服"},"zh_TW":{"title":"網路連線失敗","heading":"網路連線失敗","body":"請檢查網路設定後重試，或聯絡客服取得協助；若無法重新連線，請耐心等候並稍後再試。","contact":"聯絡客服","reload":"重新載入","copyAria":"複製網域","copySuccess":"複製成功！","copyFail":"複製失敗，請手動複製","contactOfflineHint":"請在網路恢復後聯絡客服"},"es_MX":{"title":"Error de conexión de red","heading":"Error de conexión de red","body":"Verifica tu configuración de red e inténtalo de nuevo o contacta a soporte para obtener ayuda. Si la conexión no se restablece, espera un momento y vuelve a intentarlo más tarde.","contact":"Contactar soporte","reload":"Volver a cargar","copyAria":"Copiar dominio","copySuccess":"¡Copiado!","copyFail":"No se pudo copiar. Cópialo manualmente.","contactOfflineHint":"Contacta a soporte cuando se restaure la conexión."}};
+window.__OFFLINE_DOMAIN_TEXT__ = "www.example.com";
+/**
+ * 离线页公用逻辑（构建时由插件注入；勿在业务侧单独引用）
+ * 依赖：window.__OFFLINE_I18N__、window.__OFFLINE_DOMAIN_TEXT__
+ * DOM：#logoWrap #typingText #copyDomainBtn #offline-heading #offline-body
+ *      #contactBtn #reloadBtn #copyToast
+ */
+(function () {
+  var SHORT_TO_FULL = {
+    en: 'en_US',
+    zh: 'zh_CN',
+    ja: 'ja_JP',
+    ko: 'ko_KR',
+    ar: 'ar_SA',
+    hi: 'hi_IN',
+    pt: 'pt_BR',
+    ru: 'ru_RU',
+    th: 'th_TH',
+    tr: 'tr_TR',
+    vi: 'vi_VN',
+    es: 'es_MX'
+  };
+
+  function normalizeLocaleKey(s) {
+    if (!s || typeof s !== 'string') return '';
+    s = s.trim().replace(/-/g, '_');
+    if (s.indexOf('_') === -1) return SHORT_TO_FULL[s.toLowerCase()] || '';
+    var i = s.indexOf('_');
+    return s.slice(0, i).toLowerCase() + '_' + s.slice(i + 1).toUpperCase();
+  }
+
+  function resolveOfflineLocaleKey() {
+    var fromUrl = '';
+    try {
+      fromUrl = new URLSearchParams(window.location.search).get('locale') || '';
+    } catch (e) {}
+    var fromStorage = '';
+    try {
+      var rawCommon = localStorage.getItem('common');
+      if (rawCommon) {
+        var parsed = JSON.parse(rawCommon);
+        if (parsed && typeof parsed.locale === 'string') fromStorage = parsed.locale;
+      }
+    } catch (e) {}
+    return normalizeLocaleKey(fromUrl) || normalizeLocaleKey(fromStorage) || 'zh_CN';
+  }
+
+  function applyOfflineLocale() {
+    var M = window.__OFFLINE_I18N__ || {};
+    var loc = resolveOfflineLocaleKey();
+    if (!M[loc]) loc = 'zh_CN';
+    var t = M[loc] || M.zh_CN;
+    if (!t) return;
+    document.documentElement.setAttribute('lang', loc.replace('_', '-'));
+    if (loc.indexOf('ar_') === 0) document.documentElement.setAttribute('dir', 'rtl');
+    document.title = t.title;
+    var el = document.getElementById('offline-heading');
+    if (el) el.textContent = t.heading;
+    el = document.getElementById('offline-body');
+    if (el) el.textContent = t.body;
+    el = document.getElementById('contactBtn');
+    if (el) el.textContent = t.contact;
+    el = document.getElementById('reloadBtn');
+    if (el) el.textContent = t.reload;
+    el = document.getElementById('copyDomainBtn');
+    if (el) el.setAttribute('aria-label', t.copyAria);
+    el = document.getElementById('copyToast');
+    if (el) el.textContent = t.copySuccess;
+    window.__offlineUiStrings = {
+      copySuccess: t.copySuccess,
+      copyFail: t.copyFail,
+      contactOfflineHint: t.contactOfflineHint
+    };
+  }
+
+  function startTypingAnimation() {
+    var text = window.__OFFLINE_DOMAIN_TEXT__ || '';
+    var el = document.getElementById('typingText');
+    if (!el || !text) return;
+    var i = 0;
+    var isDeleting = false;
+    var typeSpeed = 120;
+    var deleteSpeed = 60;
+    var pauseAfterType = 1800;
+    var pauseAfterDelete = 400;
+
+    function tick() {
+      if (!isDeleting) {
+        el.textContent = text.slice(0, i + 1);
+        i++;
+        if (i === text.length) {
+          isDeleting = true;
+          setTimeout(tick, pauseAfterType);
+          return;
+        }
+        setTimeout(tick, typeSpeed);
+      } else {
+        el.textContent = text.slice(0, i - 1);
+        i--;
+        if (i === 0) {
+          isDeleting = false;
+          setTimeout(tick, pauseAfterDelete);
+          return;
+        }
+        setTimeout(tick, deleteSpeed);
+      }
+    }
+
+    setTimeout(tick, 600);
+  }
+
+  function bindCopyDomain() {
+    var copyBtn = document.getElementById('copyDomainBtn');
+    var toast = document.getElementById('copyToast');
+    if (!copyBtn) return;
+    var toastTimer = null;
+
+    function showCopyToast() {
+      if (toast) {
+        if (window.__offlineUiStrings && window.__offlineUiStrings.copySuccess) {
+          toast.textContent = window.__offlineUiStrings.copySuccess;
+        }
+        toast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          toast.classList.remove('show');
+        }, 2000);
+      }
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise(function (resolve, reject) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          var ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          ok ? resolve() : reject(new Error('copy failed'));
+        } catch (err) {
+          document.body.removeChild(ta);
+          reject(err);
+        }
+      });
+    }
+
+    function handleCopy() {
+      var text = (window.__OFFLINE_DOMAIN_TEXT__ || '').trim();
+      if (!text) return;
+      copyToClipboard(text)
+        .then(showCopyToast)
+        .catch(function () {
+          var msg = (window.__offlineUiStrings && window.__offlineUiStrings.copyFail) || '';
+          alert(msg);
+        });
+    }
+
+    copyBtn.addEventListener('click', handleCopy);
+    copyBtn.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleCopy();
+      }
+    });
+  }
+
+  function bindContactBtn() {
+    var contactBtn = document.getElementById('contactBtn');
+    if (!contactBtn) return;
+    contactBtn.addEventListener('click', function () {
+      var customerServiceUrl = localStorage.getItem('customerServiceUrl');
+      if (customerServiceUrl) {
+        window.open(customerServiceUrl, '_blank');
+      } else {
+        var msg = (window.__offlineUiStrings && window.__offlineUiStrings.contactOfflineHint) || '';
+        alert(msg);
+      }
+    });
+  }
+
+  function bindOnlineReload() {
+    window.addEventListener('online', function () {
+      location.reload();
+    });
+  }
+
+  applyOfflineLocale();
+  startTypingAnimation();
+  bindCopyDomain();
+  bindContactBtn();
+  bindOnlineReload();
+})();
+
+  </script>
+</body>
+</html>

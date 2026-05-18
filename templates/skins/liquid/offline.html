@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>网络连接失败</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+      --offline-glow: rgba(236, 72, 153, 0.45);
+      --offline-glow-soft: rgba(139, 92, 246, 0.2);
+      --offline-shine: rgba(255,255,255,0.35);
+    }
+
+
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      color: #fff;
+      background: #0f0a1a;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bg-fx {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      filter: blur(48px);
+      pointer-events: none;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.75;
+    }
+
+    .blob-1 {
+      width: 55vw;
+      height: 55vw;
+      max-width: 420px;
+      max-height: 420px;
+      background: #8b5cf6;
+      top: -10%;
+      left: -10%;
+      animation: blob-a 14s ease-in-out infinite;
+    }
+
+    .blob-2 {
+      width: 50vw;
+      height: 50vw;
+      max-width: 380px;
+      max-height: 380px;
+      background: #ec4899;
+      bottom: -15%;
+      right: -10%;
+      animation: blob-b 16s ease-in-out infinite;
+    }
+
+    .blob-3 {
+      width: 45vw;
+      height: 45vw;
+      max-width: 340px;
+      max-height: 340px;
+      background: #06b6d4;
+      top: 40%;
+      left: 35%;
+      animation: blob-c 18s ease-in-out infinite;
+    }
+
+    @keyframes blob-a {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(12%, 18%) scale(1.1); }
+      66% { transform: translate(-8%, 10%) scale(0.95); }
+    }
+
+    @keyframes blob-b {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(-15%, -12%) scale(1.08); }
+    }
+
+    @keyframes blob-c {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      40% { transform: translate(-12%, -18%) scale(1.12); }
+      70% { transform: translate(10%, -8%) scale(0.9); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-wrap { margin-bottom: 28px; }
+    .logo-wrap img {
+      width: 108px;
+      border-radius: 24px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      width: min(100%, 340px);
+      height: 48px;
+      padding: 0 6px 0 16px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      margin-bottom: 32px;
+      gap: 8px;
+    }
+
+    .search-bar-input {
+      flex: 1;
+      min-width: 0;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .search-bar-btn {
+      width: 40px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .search-bar-btn:active { transform: scale(0.94); }
+    .search-bar-btn svg { width: 18px; height: 18px; }
+
+    .typing-cursor { animation: blink 0.8s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 14px; }
+    p { font-size: 14px; color: rgba(255,255,255,.75); margin-bottom: 36px; line-height: 1.75; }
+
+    .buttons { display: flex; gap: 14px; width: 100%; justify-content: center; }
+
+    .btn {
+      flex: 1;
+      max-width: 168px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn-secondary { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.2); }
+    .btn-primary { background: #fff; color: #6d28d9; box-shadow: 0 8px 28px rgba(0,0,0,.2); }
+
+    .copy-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 48px;
+      transform: translateX(-50%);
+      padding: 12px 22px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.95);
+      color: #4c1d95;
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 1000;
+    }
+
+    .copy-toast.show { opacity: 1; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .blob { animation: none; }
+    }
+
+    /* skin-motion */
+    .blob-1 { animation-duration: 11s; }
+    .blob-2 { animation-duration: 13s; }
+    .blob-3 { animation-duration: 15s; }
+    .btn-primary:hover { transform: translateY(-3px) scale(1.02); }
+  </style>
+  <style>
+__OFFLINE_PAGE_STYLES__
+  </style>
+</head>
+<body>
+  <div class="bg-fx" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <div class="container">
+    <div class="logo-wrap" id="logoWrap">
+      <img src="__OFFLINE_LOGO__" alt="" onerror="document.getElementById('logoWrap').style.display='none'" />
+    </div>
+    <div class="search-bar">
+      <div class="search-bar-input">
+        <span id="typingText"></span><span class="typing-cursor">|</span>
+      </div>
+      <div class="search-bar-btn" id="copyDomainBtn" role="button" tabindex="0" aria-label="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </div>
+    </div>
+    <h1 id="offline-heading">网络连接失败</h1>
+    <p id="offline-body">请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
+    <div class="buttons">
+      <a class="btn btn-secondary" href="javascript:void(0)" id="contactBtn">联系客服</a>
+      <button type="button" class="btn btn-primary" id="reloadBtn" onclick="location.reload()">重新加载</button>
+    </div>
+  </div>
+  <div class="copy-toast" id="copyToast" aria-live="polite"></div>
+  <script>
+__OFFLINE_PAGE_SCRIPT__
+  </script>
+</body>
+</html>

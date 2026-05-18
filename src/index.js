@@ -8,8 +8,13 @@ const path = require('path');
 const PKG_ROOT = path.join(__dirname, '..');
 const RUNTIME_DIR = path.join(PKG_ROOT, 'runtime');
 const DEFAULT_OFFLINE_HTML = path.join(PKG_ROOT, 'templates', 'default', 'offline.html');
-const DEFAULT_OFFLINE_I18N_JSON = path.join(PKG_ROOT, 'templates', 'default', 'offline-i18n.json');
-/** 默认离线页背景（与模板、runtime/sw.js 中 /static/offline-bg.jpg 一致） */
+const OFFLINE_SHARED_DIR = path.join(PKG_ROOT, 'templates', 'shared');
+const OFFLINE_I18N_JSON = path.join(OFFLINE_SHARED_DIR, 'offline-i18n.json');
+const LEGACY_OFFLINE_I18N_JSON = path.join(PKG_ROOT, 'templates', 'default', 'offline-i18n.json');
+const OFFLINE_COMMON_JS = path.join(OFFLINE_SHARED_DIR, 'offline-common.js');
+const OFFLINE_UI_MOTION_CSS = path.join(OFFLINE_SHARED_DIR, 'offline-ui-motion.css');
+const OFFLINE_SKINS_DIR = path.join(PKG_ROOT, 'templates', 'skins');
+/** 默认离线页背景（与 default 模板、runtime/sw.js 中 /static/offline-bg.jpg 一致） */
 const DEFAULT_OFFLINE_BG_JPG = path.join(PKG_ROOT, 'assets', 'offline-bg.jpg');
 
 const LOG = '[vite-plugin-sw-offline]';
@@ -17,6 +22,44 @@ const LOG = '[vite-plugin-sw-offline]';
 /** 由本包提供、不再从业务项目 public/ 读取的文件名 */
 const PACKAGE_SW_ASSET_NAMES = new Set(['sw.js', 'sw-register.js', 'offline.html', 'sw-noop.js']);
 
+/**
+ * 包内置皮肤 id 列表（`templates/skins/<id>/offline.html` 存在即视为可用）
+ * @returns {string[]}
+ */
+function listBuiltinOfflineSkins() {
+  if (!fs.existsSync(OFFLINE_SKINS_DIR)) {
+    return [];
+  }
+  return fs
+    .readdirSync(OFFLINE_SKINS_DIR, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .filter((name) => fs.existsSync(path.join(OFFLINE_SKINS_DIR, name, 'offline.html')))
+    .sort();
+}
+
+/**
+ * 内置皮肤模板绝对路径；不存在则返回 null
+ * @param {string} skinId
+ * @returns {string | null}
+ */
+function getOfflineSkinTemplatePath(skinId) {
+  if (!skinId || typeof skinId !== 'string') {
+    return null;
+  }
+  const id = skinId.trim();
+  if (!id || id.includes('..') || id.includes('/') || id.includes('\\')) {
+    return null;
+  }
+  const abs = path.join(OFFLINE_SKINS_DIR, id, 'offline.html');
+  return fs.existsSync(abs) ? abs : null;
+}
+
+/**
+ * 解析离线页 HTML 路径：offlineTemplatePath > offlineSkin > default
+ * @param {Object} [swConfig]
+ * @returns {string}
+ */
 function resolveOfflineTemplatePath(swConfig) {
   const custom = swConfig && swConfig.offlineTemplatePath;
   if (custom && typeof custom === 'string') {
@@ -24,8 +67,26 @@ function resolveOfflineTemplatePath(swConfig) {
     if (fs.existsSync(abs)) {
       return abs;
     }
-    console.warn(LOG, 'offlineTemplatePath not found, using default:', abs);
+    console.warn(LOG, 'offlineTemplatePath not found:', abs);
   }
+
+  const skin = swConfig && swConfig.offlineSkin;
+  if (skin && typeof skin === 'string') {
+    const skinPath = getOfflineSkinTemplatePath(skin);
+    if (skinPath) {
+      return skinPath;
+    }
+    const builtIn = listBuiltinOfflineSkins();
+    console.warn(
+      LOG,
+      `offlineSkin "${skin}" not found. Built-in: ${builtIn.length ? builtIn.join(', ') : '(none)'}.`
+    );
+  }
+
+  if (custom && typeof custom === 'string') {
+    console.warn(LOG, 'falling back to default offline template');
+  }
+
   return DEFAULT_OFFLINE_HTML;
 }
 
@@ -44,9 +105,19 @@ function normalizeOfflineLogoPath(raw) {
   return withSlash + query;
 }
 
+function resolveOfflineI18nJsonPath() {
+  if (fs.existsSync(OFFLINE_I18N_JSON)) {
+    return OFFLINE_I18N_JSON;
+  }
+  if (fs.existsSync(LEGACY_OFFLINE_I18N_JSON)) {
+    return LEGACY_OFFLINE_I18N_JSON;
+  }
+  return OFFLINE_I18N_JSON;
+}
+
 function loadOfflineI18nMessages() {
   try {
-    const raw = fs.readFileSync(DEFAULT_OFFLINE_I18N_JSON, 'utf-8');
+    const raw = fs.readFileSync(resolveOfflineI18nJsonPath(), 'utf-8');
     return JSON.parse(raw);
   } catch (e) {
     console.warn(LOG, 'offline-i18n.json missing or invalid:', e.message);
@@ -54,6 +125,62 @@ function loadOfflineI18nMessages() {
   }
 }
 
+function loadOfflineCommonScript() {
+  try {
+    return fs.readFileSync(OFFLINE_COMMON_JS, 'utf-8');
+  } catch (e) {
+    console.warn(LOG, 'offline-common.js missing:', e.message);
+    return '';
+  }
+}
+
+function loadOfflineUiMotionStyles() {
+  try {
+    return fs.readFileSync(OFFLINE_UI_MOTION_CSS, 'utf-8');
+  } catch (e) {
+    console.warn(LOG, 'offline-ui-motion.css missing:', e.message);
+    return '';
+  }
+}
+
+function buildOfflinePageStyles() {
+  return loadOfflineUiMotionStyles();
+}
+
+function injectOfflinePageStyles(content) {
+  if (!content.includes('__OFFLINE_PAGE_STYLES__')) {
+    return content;
+  }
+  return content.replace(/__OFFLINE_PAGE_STYLES__/g, buildOfflinePageStyles());
+}
+
+/** 离线页引导 + 公用脚本（注入 __OFFLINE_PAGE_SCRIPT__） */
+function buildOfflinePageScript(swConfig) {
+  const messages = loadOfflineI18nMessages();
+  const i18nSafe = JSON.stringify(messages).replace(/</g, '\\u003c');
+  const domain =
+    swConfig && swConfig.offlineDomain != null ? String(swConfig.offlineDomain) : '';
+  const domainSafe = JSON.stringify(domain);
+  const common = loadOfflineCommonScript();
+  return (
+    'window.__OFFLINE_I18N__ = ' +
+    i18nSafe +
+    ';\n' +
+    'window.__OFFLINE_DOMAIN_TEXT__ = ' +
+    domainSafe +
+    ';\n' +
+    common
+  );
+}
+
+function injectOfflinePageScript(content, swConfig) {
+  if (!content.includes('__OFFLINE_PAGE_SCRIPT__')) {
+    return content;
+  }
+  return content.replace(/__OFFLINE_PAGE_SCRIPT__/g, buildOfflinePageScript(swConfig));
+}
+
+/** @deprecated 自定义模板若仍使用 __OFFLINE_I18N_INJECT__ 时兼容 */
 function injectOfflineI18nPlaceholder(content) {
   const messages = loadOfflineI18nMessages();
   const raw = JSON.stringify(messages);
@@ -62,13 +189,19 @@ function injectOfflineI18nPlaceholder(content) {
 }
 
 function injectOfflineHtml(content, swConfig) {
-  content = injectOfflineI18nPlaceholder(content);
+  content = injectOfflinePageStyles(content);
+  content = injectOfflinePageScript(content, swConfig);
+  if (content.includes('__OFFLINE_I18N_INJECT__')) {
+    content = injectOfflineI18nPlaceholder(content);
+  }
   const logo = normalizeOfflineLogoPath((swConfig && swConfig.offlineLogoPath) || '');
   if (logo) {
     content = content.replace(/__OFFLINE_LOGO__/g, logo);
   }
-  if (swConfig && swConfig.offlineDomain) {
-    content = content.replace(/__OFFLINE_DOMAIN__/g, swConfig.offlineDomain);
+  const domain =
+    swConfig && swConfig.offlineDomain != null ? String(swConfig.offlineDomain) : '';
+  if (content.includes('__OFFLINE_DOMAIN__')) {
+    content = content.replace(/__OFFLINE_DOMAIN__/g, domain);
   }
   return content;
 }
@@ -268,6 +401,14 @@ function vitePluginSwOffline(options = {}) {
       if (!options.swVersion || String(options.swVersion).trim() === '') {
         console.log(LOG, 'swVersion (auto):', swVersion);
       }
+      const offlineTpl = resolveOfflineTemplatePath(swConfig);
+      const skinLabel =
+        swConfig.offlineSkin && getOfflineSkinTemplatePath(swConfig.offlineSkin)
+          ? `skin:${swConfig.offlineSkin}`
+          : swConfig.offlineTemplatePath
+            ? 'custom path'
+            : 'default';
+      console.log(LOG, 'offline template (' + skinLabel + '):', offlineTpl);
     },
     configureServer(server) {
       let devReadyLogged = false;
@@ -422,6 +563,16 @@ function getDefaultOfflineTemplatePath() {
   return DEFAULT_OFFLINE_HTML;
 }
 
+/** 离线页公用资源目录（i18n、common.js） */
+function getOfflineSharedDir() {
+  return OFFLINE_SHARED_DIR;
+}
+
+/** 内置皮肤目录（`templates/skins`） */
+function getOfflineSkinsDir() {
+  return OFFLINE_SKINS_DIR;
+}
+
 /** 包内默认离线背景图路径 */
 function getDefaultOfflineBackgroundPath() {
   return DEFAULT_OFFLINE_BG_JPG;
@@ -432,6 +583,14 @@ module.exports = {
   getRuntimeDir,
   getDefaultOfflineTemplatePath,
   getDefaultOfflineBackgroundPath,
+  getOfflineSharedDir,
+  buildOfflinePageScript,
+  buildOfflinePageStyles,
+  loadOfflineI18nMessages,
+  getOfflineSkinsDir,
+  listBuiltinOfflineSkins,
+  getOfflineSkinTemplatePath,
+  resolveOfflineTemplatePath,
   getDefaultCacheableApiPaths: () => DEFAULT_CACHEABLE_API_PATHS.slice(),
   getDefaultServiceWorker: () => ({ ...DEFAULT_SERVICE_WORKER }),
   resolveServiceWorker,

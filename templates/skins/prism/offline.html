@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>网络连接失败</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+      --offline-glow: rgba(168, 85, 247, 0.5);
+      --offline-glow-soft: rgba(99, 102, 241, 0.22);
+      --offline-shine: rgba(255,255,255,0.4);
+    }
+
+
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      color: #fff;
+      background: #0a0a0f;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bg-fx {
+      position: fixed;
+      inset: -50%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .prism-ring {
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      left: -50%;
+      top: -50%;
+      background: conic-gradient(
+        from 0deg,
+        #ef4444,
+        #f97316,
+        #eab308,
+        #22c55e,
+        #06b6d4,
+        #3b82f6,
+        #a855f7,
+        #ec4899,
+        #ef4444
+      );
+      animation: prism-spin 8s linear infinite;
+      opacity: 0.45;
+    }
+
+    .prism-vignette {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 0%, #0a0a0f 68%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes prism-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .logo-wrap { margin-bottom: 28px; }
+    .logo-wrap img {
+      width: 108px;
+      border-radius: 22px;
+      box-shadow: 0 0 0 2px rgba(255,255,255,.2);
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      width: min(100%, 340px);
+      height: 48px;
+      padding: 0 6px 0 16px;
+      border-radius: 14px;
+      background: rgba(10, 10, 15, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      margin-bottom: 32px;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .search-bar::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: conic-gradient(#ef4444, #3b82f6, #a855f7, #ef4444);
+      z-index: -1;
+      border-radius: 16px;
+      animation: prism-border 4s linear infinite;
+    }
+
+    .search-bar::after {
+      content: '';
+      position: absolute;
+      inset: 1px;
+      background: rgba(10, 10, 15, 0.92);
+      border-radius: 13px;
+      z-index: -1;
+    }
+
+    @keyframes prism-border {
+      to { transform: rotate(360deg); }
+    }
+
+    .search-bar-input {
+      flex: 1;
+      min-width: 0;
+      color: #fff;
+      font-size: 17px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      position: relative;
+      z-index: 1;
+    }
+
+    .search-bar-btn {
+      width: 40px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      color: #fff;
+      position: relative;
+      z-index: 1;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .search-bar-btn:active { transform: scale(0.94); }
+    .search-bar-btn svg { width: 18px; height: 18px; }
+
+    .typing-cursor { animation: blink 0.8s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      background: linear-gradient(90deg, #f472b6, #a78bfa, #38bdf8, #f472b6);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: text-shine 4s linear infinite;
+    }
+
+    @keyframes text-shine {
+      to { background-position: 200% center; }
+    }
+
+    p { font-size: 14px; color: rgba(255,255,255,.65); margin-bottom: 36px; line-height: 1.75; }
+
+    .buttons { display: flex; gap: 14px; width: 100%; justify-content: center; }
+
+    .btn {
+      flex: 1;
+      max-width: 168px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn-secondary { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.15); }
+    .btn-primary {
+      background: linear-gradient(90deg, #6366f1, #ec4899, #f97316);
+      background-size: 200% auto;
+      color: #fff;
+      animation: text-shine 3s linear infinite;
+    }
+
+    .copy-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 48px;
+      transform: translateX(-50%);
+      padding: 12px 22px;
+      border-radius: 12px;
+      background: rgba(10, 10, 15, 0.95);
+      border: 1px solid rgba(255,255,255,.2);
+      font-size: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 1000;
+    }
+
+    .copy-toast.show { opacity: 1; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .prism-ring, .search-bar::before, h1, .btn-primary { animation: none; }
+      h1 { -webkit-text-fill-color: #fff; color: #fff; }
+    }
+
+    /* skin-motion */
+    .prism-ring { animation-duration: 7s; }
+    .search-bar::before { animation-duration: 3s; }
+    h1#offline-heading {
+      animation:
+        offline-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.18s both,
+        offline-heading-glow 3.5s ease-in-out infinite,
+        text-shine 5s linear infinite;
+    }
+    @keyframes text-shine {
+      to { background-position: 200% center; }
+    }
+  </style>
+  <style>
+__OFFLINE_PAGE_STYLES__
+  </style>
+</head>
+<body>
+  <div class="bg-fx" aria-hidden="true">
+    <div class="prism-ring"></div>
+  </div>
+  <div class="prism-vignette" aria-hidden="true"></div>
+  <div class="container">
+    <div class="logo-wrap" id="logoWrap">
+      <img src="__OFFLINE_LOGO__" alt="" onerror="document.getElementById('logoWrap').style.display='none'" />
+    </div>
+    <div class="search-bar">
+      <div class="search-bar-input">
+        <span id="typingText"></span><span class="typing-cursor">|</span>
+      </div>
+      <div class="search-bar-btn" id="copyDomainBtn" role="button" tabindex="0" aria-label="">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+        </svg>
+      </div>
+    </div>
+    <h1 id="offline-heading">网络连接失败</h1>
+    <p id="offline-body">请检查网络设置后重试，或联系客服获取帮助，若无法重启，请您耐心等待并稍后再进行尝试。</p>
+    <div class="buttons">
+      <a class="btn btn-secondary" href="javascript:void(0)" id="contactBtn">联系客服</a>
+      <button type="button" class="btn btn-primary" id="reloadBtn" onclick="location.reload()">重新加载</button>
+    </div>
+  </div>
+  <div class="copy-toast" id="copyToast" aria-live="polite"></div>
+  <script>
+__OFFLINE_PAGE_SCRIPT__
+  </script>
+</body>
+</html>
