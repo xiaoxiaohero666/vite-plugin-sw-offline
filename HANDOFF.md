@@ -20,7 +20,7 @@ import { CACHEABLE_SW_API_PATHS } from './src/configs/sw-cacheable-api-paths.js'
 vitePluginSwOffline({
   outDir: 'dist',
   offlineLogoPath: '...',
-  offlineDomain: '...',
+  // offlineDomain 可选；未传则注入 location.origin（打字机 / 复制域名）
   cacheableApiPaths: CACHEABLE_SW_API_PATHS,
   robotsTxtContent: '...', // 可选
   // networkProbeUrl: () => buildSwNetworkProbeUrl(...), // 可选，见 README
@@ -45,6 +45,7 @@ vitePluginSwOffline({
 | `serviceWorker` | 对象字段：`apiTimeout`、`imageCacheMaxItems` 等，对应 `sw.js` 里 `__SW_RT_*__` 占位符。 |
 | 离线页背景 | default：**全屏 `body` + `background-size: cover` + `top center`**。皮肤 `aurora` 等为纯 CSS 渐变，不依赖 jpg。 |
 | `offlineSkin` | 内置 `templates/skins/<id>/offline.html`；优先级低于 `offlineTemplatePath`。导出 `listBuiltinOfflineSkins` 等。 |
+| `offlineDomain` | 可选。未传或空串 → `buildOfflinePageScript` 注入 `window.__OFFLINE_DOMAIN_TEXT__ = location.origin`；有值 → 注入 JSON 字符串字面量。逻辑在 `resolveOfflineDomainText()`，勿在 `offline-common.js` 再兜底。 |
 | `define` 陷阱 | 业务 `vite.config` **不要**写 `define: { 'process.env': { APP_ENV, IS_APP } }` 整对象替换，会抹掉 `NODE_ENV`，导致 dev 下 `process.env.NODE_ENV === 'development'` 的 console 失效。应分别 `process.env.APP_ENV` / `IS_APP`。 |
 
 ## npm 发布状态

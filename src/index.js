@@ -147,6 +147,18 @@ function buildOfflinePageStyles() {
   return loadOfflineUiMotionStyles();
 }
 
+/**
+ * 解析 offlineDomain：未传或空串则返回 null（运行时用 location.origin）
+ * @param {Object} [swConfig]
+ * @returns {string | null}
+ */
+function resolveOfflineDomainText(swConfig) {
+  const raw = swConfig && swConfig.offlineDomain;
+  if (raw == null) return null;
+  const s = String(raw).trim();
+  return s === '' ? null : s;
+}
+
 function injectOfflinePageStyles(content) {
   if (!content.includes('__OFFLINE_PAGE_STYLES__')) {
     return content;
@@ -158,17 +170,17 @@ function injectOfflinePageStyles(content) {
 function buildOfflinePageScript(swConfig) {
   const messages = loadOfflineI18nMessages();
   const i18nSafe = JSON.stringify(messages).replace(/</g, '\\u003c');
-  const domain =
-    swConfig && swConfig.offlineDomain != null ? String(swConfig.offlineDomain) : '';
-  const domainSafe = JSON.stringify(domain);
+  const domain = resolveOfflineDomainText(swConfig);
+  const domainLine =
+    domain != null
+      ? 'window.__OFFLINE_DOMAIN_TEXT__ = ' + JSON.stringify(domain) + ';\n'
+      : 'window.__OFFLINE_DOMAIN_TEXT__ = location.origin;\n';
   const common = loadOfflineCommonScript();
   return (
     'window.__OFFLINE_I18N__ = ' +
     i18nSafe +
     ';\n' +
-    'window.__OFFLINE_DOMAIN_TEXT__ = ' +
-    domainSafe +
-    ';\n' +
+    domainLine +
     common
   );
 }
@@ -198,10 +210,9 @@ function injectOfflineHtml(content, swConfig) {
   if (logo) {
     content = content.replace(/__OFFLINE_LOGO__/g, logo);
   }
-  const domain =
-    swConfig && swConfig.offlineDomain != null ? String(swConfig.offlineDomain) : '';
+  const domain = resolveOfflineDomainText(swConfig);
   if (content.includes('__OFFLINE_DOMAIN__')) {
-    content = content.replace(/__OFFLINE_DOMAIN__/g, domain);
+    content = content.replace(/__OFFLINE_DOMAIN__/g, domain != null ? domain : '');
   }
   return content;
 }
