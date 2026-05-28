@@ -66,6 +66,8 @@ export default defineConfig({
       offlineLogoPath: '/static/logos/your-logo.png',
       // 离线页打字机展示的域名文案（可选；不传则注入 location.origin）
       // offlineDomain: 'https://www.example.com',
+      // 离线页默认语言（可选；不传为 zh_CN；支持 en、en-US、en_US 等）
+      // defaultLocale: 'en_US',
       // 内置皮肤（与 offlineTemplatePath 二选一，路径优先）
       // offlineSkin: 'aurora',
       // 可走 SWR 的 API 路径白名单（pathname 包含即匹配）；不传则为空
@@ -270,6 +272,7 @@ vitePluginSwOffline({
 | `networkProbeUrl` | `string \| (ctx) => string` | 见 [维护接口探测](#维护接口探测networkprobeurl)。 |
 | `offlineLogoPath` | `string` | 离线页 `__OFFLINE_LOGO__` 与 SW 预缓存 Logo；支持 `https://`、根路径 `/`、`?v=`。 |
 | `offlineDomain` | `string` | 离线页打字机 / 复制域名文案。未传或空串时，构建注入 `window.__OFFLINE_DOMAIN_TEXT__ = location.origin`（运行时取当前站点 origin）。 |
+| `defaultLocale` | `string` | 离线页默认语言。未传或空串时为 `zh_CN`。支持简写（如 `en` → `en_US`）及 `zh-CN` / `zh_CN` 等形式；键须存在于 `offline-i18n.json`，否则回退 `zh_CN` 并打警告。 |
 | `offlineSkin` | `string` | 使用包内置皮肤 id（如 `aurora` → `templates/skins/aurora/offline.html`）。与 `offlineTemplatePath` 同时配置时，**以路径为准**。 |
 | `offlineTemplatePath` | `string` | 自定义离线页 HTML（绝对路径或相对 `process.cwd()`）。不存在则尝试 `offlineSkin`，再回退 default。 |
 | `cacheableApiPaths` | `string[]` | API 路径白名单（pathname 包含即走 SWR）。不传则为空列表。 |
@@ -304,10 +307,11 @@ resolveServiceWorker({ serviceWorker: { apiTimeout: 5000 } });
 | `sw.js` | `__NETWORK_PROBE_URL__` | `networkProbeUrl` |
 | `sw.js` | `__SW_VERSION__` | `swVersion`（自动或手动） |
 | `sw.js` | `__OFFLINE_LOGO_PATH__` | `offlineLogoPath`（规范化） |
+| `sw.js` | `__OFFLINE_DEFAULT_LOCALE__` | `defaultLocale`（规范化，默认 `zh_CN`） |
 | `sw.js` | `__SW_RT_*__` | `serviceWorker` 各字段 |
 | `sw-register.js` | `__SW_VERSION__` | `swVersion` |
 | `offline.html` | `__OFFLINE_PAGE_STYLES__` | `templates/shared/offline-ui-motion.css`（入场、按钮、输入框等动效） |
-| `offline.html` | `__OFFLINE_PAGE_SCRIPT__` | 引导变量 + `templates/shared/offline-common.js`（i18n、打字机、复制、客服）；其中 `__OFFLINE_DOMAIN_TEXT__` 来自 `offlineDomain`，未配置则为 `location.origin` |
+| `offline.html` | `__OFFLINE_PAGE_SCRIPT__` | 引导变量 + `templates/shared/offline-common.js`（i18n、打字机、复制、客服）；其中 `__OFFLINE_DEFAULT_LOCALE__` 来自 `defaultLocale`（默认 `zh_CN`），`__OFFLINE_DOMAIN_TEXT__` 来自 `offlineDomain`，未配置则为 `location.origin` |
 | `offline.html` | `__OFFLINE_LOGO__` | `offlineLogoPath` |
 | `offline.html` | `__OFFLINE_DOMAIN__` | `offlineDomain` 字面量（仅旧模板占位符；未配置时为空，新模板请用 `__OFFLINE_PAGE_SCRIPT__`） |
 | `offline.html` | `__OFFLINE_I18N_INJECT__` | 已废弃，自定义旧模板仍兼容 |
@@ -322,6 +326,16 @@ resolveServiceWorker({ serviceWorker: { apiTimeout: 5000 } });
 3. 白名单 API → Stale-While-Revalidate  
 4. 无 hash 同源静态 → Network First  
 5. 导航 → 先外网探测，失败则 `offline.html`  
+
+### 离线页语言
+
+文案来自 `templates/shared/offline-i18n.json`。运行时按以下优先级解析（高 → 低）：
+
+1. URL 查询参数 `?locale=`（如 `?locale=en_US`）
+2. `localStorage` 中 `common.locale`（JSON 字段 `locale`）
+3. 插件配置 `defaultLocale`（未传则为 `zh_CN`）
+
+SW 内联兜底离线页与完整 `offline.html` 使用相同规则。可用 `?locale=` 临时覆盖默认语言做验收。
 
 ## 页面侧 API（window.swCache）
 
@@ -355,6 +369,9 @@ import {
   getDefaultServiceWorker,
   resolveServiceWorker,
   normalizeOfflineLogoPath,
+  normalizeOfflineLocaleKey,
+  resolveDefaultLocale,
+  getDefaultOfflineLocale,
   injectOfflineHtml
 } from 'vite-plugin-sw-offline';
 ```
@@ -376,6 +393,9 @@ import {
 | `getDefaultServiceWorker()` | `serviceWorker` 默认值 |
 | `resolveServiceWorker(partial)` | 合并默认值 |
 | `normalizeOfflineLogoPath(raw)` | Logo 路径规范化 |
+| `normalizeOfflineLocaleKey(s)` | locale 简写 / 连字符规范化（如 `en` → `en_US`） |
+| `resolveDefaultLocale(options)` | 按 `defaultLocale` 与 i18n 表解析最终默认键 |
+| `getDefaultOfflineLocale()` | 常量 `zh_CN`（未配置插件时的内置默认） |
 | `injectOfflineHtml(html, options)` | 仅注入离线页占位符 |
 
 ## 离线页皮肤
@@ -389,6 +409,7 @@ vitePluginSwOffline({
   offlineSkin: 'aurora', // 内置皮肤 id
   offlineLogoPath: '/static/logos/your-logo.png',
   // offlineDomain: 'www.example.com', // 可选；省略则展示当前站点 location.origin
+  // defaultLocale: 'en_US', // 可选；省略则为 zh_CN
   cacheableApiPaths: ['/user/getUserInfo.do'],
 });
 ```
@@ -455,7 +476,7 @@ __OFFLINE_PAGE_SCRIPT__
 </script>
 ```
 
-插件会注入公用 UI 动效（`offline-ui-motion.css`）、`window.__OFFLINE_I18N__`、`window.__OFFLINE_DOMAIN_TEXT__` 及公用逻辑（`offline-common.js`）。`__OFFLINE_DOMAIN_TEXT__` 由 `offlineDomain` 决定：有配置则注入该字符串，未配置则注入表达式 `location.origin`（页面打开时即为当前站点，如 `https://example.com`）。皮肤样式块写在第一个 `<style>` 中即可，可通过 `:root` 覆盖 `--offline-glow` 等变量。文案维护在 **`templates/shared/offline-i18n.json`**（所有皮肤共用）。
+插件会注入公用 UI 动效（`offline-ui-motion.css`）、`window.__OFFLINE_I18N__`、`window.__OFFLINE_DEFAULT_LOCALE__`、`window.__OFFLINE_DOMAIN_TEXT__` 及公用逻辑（`offline-common.js`）。`__OFFLINE_DEFAULT_LOCALE__` 由 `defaultLocale` 决定（默认 `zh_CN`）；`__OFFLINE_DOMAIN_TEXT__` 由 `offlineDomain` 决定：有配置则注入该字符串，未配置则注入表达式 `location.origin`（页面打开时即为当前站点，如 `https://example.com`）。皮肤样式块写在第一个 `<style>` 中即可，可通过 `:root` 覆盖 `--offline-glow` 等变量。文案维护在 **`templates/shared/offline-i18n.json`**（所有皮肤共用）。
 
 自定义模板须保留以下 **DOM id**（仅结构/样式可自由调整）：
 

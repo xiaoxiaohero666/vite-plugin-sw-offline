@@ -1,6 +1,6 @@
 /**
  * 离线页公用逻辑（构建时由插件注入；勿在业务侧单独引用）
- * 依赖：window.__OFFLINE_I18N__、window.__OFFLINE_DOMAIN_TEXT__
+ * 依赖：window.__OFFLINE_I18N__、window.__OFFLINE_DEFAULT_LOCALE__、window.__OFFLINE_DOMAIN_TEXT__
  * DOM：#logoWrap #typingText #copyDomainBtn #offline-heading #offline-body
  *      #contactBtn #reloadBtn #copyToast
  */
@@ -28,6 +28,11 @@
     return s.slice(0, i).toLowerCase() + '_' + s.slice(i + 1).toUpperCase();
   }
 
+  function getDefaultLocaleKey() {
+    var d = window.__OFFLINE_DEFAULT_LOCALE__;
+    return d && typeof d === 'string' ? d : 'zh_CN';
+  }
+
   function resolveOfflineLocaleKey() {
     var fromUrl = '';
     try {
@@ -41,14 +46,15 @@
         if (parsed && typeof parsed.locale === 'string') fromStorage = parsed.locale;
       }
     } catch (e) {}
-    return normalizeLocaleKey(fromUrl) || normalizeLocaleKey(fromStorage) || 'zh_CN';
+    return normalizeLocaleKey(fromUrl) || normalizeLocaleKey(fromStorage) || getDefaultLocaleKey();
   }
 
   function applyOfflineLocale() {
     var M = window.__OFFLINE_I18N__ || {};
+    var fallback = getDefaultLocaleKey();
     var loc = resolveOfflineLocaleKey();
-    if (!M[loc]) loc = 'zh_CN';
-    var t = M[loc] || M.zh_CN;
+    if (!M[loc]) loc = fallback;
+    var t = M[loc] || M[fallback];
     if (!t) return;
     document.documentElement.setAttribute('lang', loc.replace('_', '-'));
     if (loc.indexOf('ar_') === 0) document.documentElement.setAttribute('dir', 'rtl');

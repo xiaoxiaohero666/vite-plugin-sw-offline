@@ -99,6 +99,9 @@ const NETWORK_PROBE_TIMEOUT = __SW_RT_NETWORK_PROBE_TIMEOUT__;
 /** 离线页文案（构建时注入 JSON，与 offline.html 同源） */
 const OFFLINE_I18N = __OFFLINE_I18N_INJECT__;
 
+/** 离线页默认语言（构建时由 vite-plugin-sw-offline 注入，与 defaultLocale 一致） */
+const OFFLINE_DEFAULT_LOCALE = '__OFFLINE_DEFAULT_LOCALE__';
+
 // ============================================
 // 二、工具函数
 // ============================================
@@ -232,10 +235,13 @@ function stringifyOfflineI18nForInlineScript() {
  */
 function buildInlineOfflineFallbackHtml() {
   const messagesJson = stringifyOfflineI18nForInlineScript();
+  const def = JSON.stringify(OFFLINE_DEFAULT_LOCALE);
   const script =
     '(function(){var M=' +
     messagesJson +
-    ';var SHORT={en:"en_US",zh:"zh_CN",ja:"ja_JP",ko:"ko_KR",ar:"ar_SA",hi:"hi_IN",pt:"pt_BR",ru:"ru_RU",th:"th_TH",tr:"tr_TR",vi:"vi_VN",es:"es_MX"};function norm(s){if(!s||typeof s!=="string")return "";s=s.trim().replace(/-/g,"_");if(s.indexOf("_")===-1)return SHORT[s.toLowerCase()]||"";var i=s.indexOf("_");return s.slice(0,i).toLowerCase()+"_"+s.slice(i+1).toUpperCase();}function resolveKey(){var u="";try{u=new URLSearchParams(location.search).get("locale")||"";}catch(e){}var st="";try{var raw=localStorage.getItem("common");if(raw){var o=JSON.parse(raw);if(o&&typeof o.locale==="string")st=o.locale;}}catch(e){}return norm(u)||norm(st)||"zh_CN";}var key=resolveKey();if(!M[key])key="zh_CN";var t=M[key]||M.zh_CN;if(!t)return;document.documentElement.setAttribute("lang",key.replace("_","-"));if(key.indexOf("ar_")===0)document.documentElement.setAttribute("dir","rtl");document.title=t.title;var el=document.getElementById("oh");if(el)el.textContent=t.heading;el=document.getElementById("ob");if(el)el.textContent=t.body;el=document.getElementById("oc");if(el)el.textContent=t.contact;el=document.getElementById("or");if(el)el.textContent=t.reload;window.__offlineContactHint=t.contactOfflineHint;})();';
+    ';var DEF=' +
+    def +
+    ';var SHORT={en:"en_US",zh:"zh_CN",ja:"ja_JP",ko:"ko_KR",ar:"ar_SA",hi:"hi_IN",pt:"pt_BR",ru:"ru_RU",th:"th_TH",tr:"tr_TR",vi:"vi_VN",es:"es_MX"};function norm(s){if(!s||typeof s!=="string")return "";s=s.trim().replace(/-/g,"_");if(s.indexOf("_")===-1)return SHORT[s.toLowerCase()]||"";var i=s.indexOf("_");return s.slice(0,i).toLowerCase()+"_"+s.slice(i+1).toUpperCase();}function resolveKey(){var u="";try{u=new URLSearchParams(location.search).get("locale")||"";}catch(e){}var st="";try{var raw=localStorage.getItem("common");if(raw){var o=JSON.parse(raw);if(o&&typeof o.locale==="string")st=o.locale;}}catch(e){}return norm(u)||norm(st)||DEF;}var key=resolveKey();if(!M[key])key=DEF;var t=M[key]||M[DEF];if(!t)return;document.documentElement.setAttribute("lang",key.replace("_","-"));if(key.indexOf("ar_")===0)document.documentElement.setAttribute("dir","rtl");document.title=t.title;var el=document.getElementById("oh");if(el)el.textContent=t.heading;el=document.getElementById("ob");if(el)el.textContent=t.body;el=document.getElementById("oc");if(el)el.textContent=t.contact;el=document.getElementById("or");if(el)el.textContent=t.reload;window.__offlineContactHint=t.contactOfflineHint;})();';
   return (
     '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">' +
     '<title></title>' +

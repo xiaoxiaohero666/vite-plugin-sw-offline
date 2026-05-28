@@ -175,10 +175,14 @@ function buildOfflinePageScript(swConfig) {
     domain != null
       ? 'window.__OFFLINE_DOMAIN_TEXT__ = ' + JSON.stringify(domain) + ';\n'
       : 'window.__OFFLINE_DOMAIN_TEXT__ = location.origin;\n';
+  const defaultLocale = resolveDefaultLocale(swConfig);
   const common = loadOfflineCommonScript();
   return (
     'window.__OFFLINE_I18N__ = ' +
     i18nSafe +
+    ';\n' +
+    'window.__OFFLINE_DEFAULT_LOCALE__ = ' +
+    JSON.stringify(defaultLocale) +
     ';\n' +
     domainLine +
     common
@@ -215,6 +219,61 @@ function injectOfflineHtml(content, swConfig) {
     content = content.replace(/__OFFLINE_DOMAIN__/g, domain != null ? domain : '');
   }
   return content;
+}
+
+/** 未传入 defaultLocale 时离线页默认语言 */
+const DEFAULT_OFFLINE_LOCALE = 'zh_CN';
+
+const OFFLINE_LOCALE_SHORT = {
+  en: 'en_US',
+  zh: 'zh_CN',
+  ja: 'ja_JP',
+  ko: 'ko_KR',
+  ar: 'ar_SA',
+  hi: 'hi_IN',
+  pt: 'pt_BR',
+  ru: 'ru_RU',
+  th: 'th_TH',
+  tr: 'tr_TR',
+  vi: 'vi_VN',
+  es: 'es_MX'
+};
+
+/**
+ * 规范化 locale 键（如 zh、zh-CN、zh_CN → zh_CN）
+ * @param {string} s
+ * @returns {string}
+ */
+function normalizeOfflineLocaleKey(s) {
+  if (!s || typeof s !== 'string') return '';
+  let t = s.trim().replace(/-/g, '_');
+  if (t.indexOf('_') === -1) return OFFLINE_LOCALE_SHORT[t.toLowerCase()] || '';
+  const i = t.indexOf('_');
+  return t.slice(0, i).toLowerCase() + '_' + t.slice(i + 1).toUpperCase();
+}
+
+/**
+ * 解析 defaultLocale：未传或空 → zh_CN；支持 zh / zh-CN / zh_CN；未知键回退 zh_CN
+ * @param {Object} [swConfig]
+ * @returns {string}
+ */
+function resolveDefaultLocale(swConfig) {
+  const messages = loadOfflineI18nMessages();
+  const raw = swConfig && swConfig.defaultLocale;
+  if (raw == null || String(raw).trim() === '') {
+    return DEFAULT_OFFLINE_LOCALE;
+  }
+  const normalized = normalizeOfflineLocaleKey(String(raw));
+  if (normalized && messages[normalized]) {
+    return normalized;
+  }
+  if (normalized) {
+    console.warn(
+      LOG,
+      `defaultLocale "${raw}" not in offline-i18n.json, fallback to ${DEFAULT_OFFLINE_LOCALE}`
+    );
+  }
+  return DEFAULT_OFFLINE_LOCALE;
 }
 
 /** 未传入 cacheableApiPaths 时使用的默认白名单（空列表，由业务显式配置） */
@@ -303,6 +362,10 @@ function applySwJsPlaceholders(content, swConfig) {
   content = content.replace(
     "const OFFLINE_LOGO_PATH = '__OFFLINE_LOGO_PATH__';",
     'const OFFLINE_LOGO_PATH = ' + JSON.stringify(logoForSw) + ';'
+  );
+  content = content.replace(
+    "const OFFLINE_DEFAULT_LOCALE = '__OFFLINE_DEFAULT_LOCALE__';",
+    'const OFFLINE_DEFAULT_LOCALE = ' + JSON.stringify(resolveDefaultLocale(swConfig)) + ';'
   );
   return content;
 }
@@ -606,5 +669,8 @@ module.exports = {
   getDefaultServiceWorker: () => ({ ...DEFAULT_SERVICE_WORKER }),
   resolveServiceWorker,
   normalizeOfflineLogoPath,
+  normalizeOfflineLocaleKey,
+  resolveDefaultLocale,
+  getDefaultOfflineLocale: () => DEFAULT_OFFLINE_LOCALE,
   injectOfflineHtml
 };
