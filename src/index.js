@@ -159,6 +159,27 @@ function resolveOfflineDomainText(swConfig) {
   return s === '' ? null : s;
 }
 
+/**
+ * 解析 offlineReloadInterval：未传回退默认 3000；0 关闭自动刷新；非法或负数回退默认
+ * @param {Object} [swConfig]
+ * @returns {number}
+ */
+function resolveOfflineReloadInterval(swConfig) {
+  const raw = swConfig && swConfig.offlineReloadInterval;
+  if (raw == null || raw === '') {
+    return DEFAULT_OFFLINE_RELOAD_INTERVAL;
+  }
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n) || n < 0) {
+    console.warn(
+      LOG,
+      `offlineReloadInterval "${raw}" invalid, fallback to ${DEFAULT_OFFLINE_RELOAD_INTERVAL}`
+    );
+    return DEFAULT_OFFLINE_RELOAD_INTERVAL;
+  }
+  return Math.floor(n);
+}
+
 function injectOfflinePageStyles(content) {
   if (!content.includes('__OFFLINE_PAGE_STYLES__')) {
     return content;
@@ -176,6 +197,7 @@ function buildOfflinePageScript(swConfig) {
       ? 'window.__OFFLINE_DOMAIN_TEXT__ = ' + JSON.stringify(domain) + ';\n'
       : 'window.__OFFLINE_DOMAIN_TEXT__ = location.origin;\n';
   const defaultLocale = resolveDefaultLocale(swConfig);
+  const reloadInterval = resolveOfflineReloadInterval(swConfig);
   const common = loadOfflineCommonScript();
   return (
     'window.__OFFLINE_I18N__ = ' +
@@ -183,6 +205,9 @@ function buildOfflinePageScript(swConfig) {
     ';\n' +
     'window.__OFFLINE_DEFAULT_LOCALE__ = ' +
     JSON.stringify(defaultLocale) +
+    ';\n' +
+    'window.__OFFLINE_RELOAD_INTERVAL__ = ' +
+    String(reloadInterval) +
     ';\n' +
     domainLine +
     common
@@ -223,6 +248,9 @@ function injectOfflineHtml(content, swConfig) {
 
 /** 未传入 defaultLocale 时离线页默认语言 */
 const DEFAULT_OFFLINE_LOCALE = 'zh_CN';
+
+/** 离线页自动刷新间隔（ms）；0 表示关闭 */
+const DEFAULT_OFFLINE_RELOAD_INTERVAL = 3000;
 
 const OFFLINE_LOCALE_SHORT = {
   en: 'en_US',
@@ -672,5 +700,7 @@ module.exports = {
   normalizeOfflineLocaleKey,
   resolveDefaultLocale,
   getDefaultOfflineLocale: () => DEFAULT_OFFLINE_LOCALE,
+  resolveOfflineReloadInterval,
+  getDefaultOfflineReloadInterval: () => DEFAULT_OFFLINE_RELOAD_INTERVAL,
   injectOfflineHtml
 };

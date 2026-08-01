@@ -23,7 +23,11 @@ const LOGO_DEMO_STYLE = {
   prism: 'background:linear-gradient(90deg,#6366f1,#ec4899,#f97316);color:#fff'
 };
 
-const pageScript = buildOfflinePageScript({ offlineDomain: 'www.example.com' });
+const pageScript = buildOfflinePageScript({
+  offlineDomain: 'www.example.com',
+  // 本地 file:// 预览不要自动刷新
+  offlineReloadInterval: 0
+});
 const pageStyles = buildOfflinePageStyles();
 
 function buildPreview(skinId) {

@@ -1,6 +1,7 @@
 /**
  * 离线页公用逻辑（构建时由插件注入；勿在业务侧单独引用）
- * 依赖：window.__OFFLINE_I18N__、window.__OFFLINE_DEFAULT_LOCALE__、window.__OFFLINE_DOMAIN_TEXT__
+ * 依赖：window.__OFFLINE_I18N__、window.__OFFLINE_DEFAULT_LOCALE__、
+ *       window.__OFFLINE_DOMAIN_TEXT__、window.__OFFLINE_RELOAD_INTERVAL__
  * DOM：#logoWrap #typingText #copyDomainBtn #offline-heading #offline-body
  *      #contactBtn #reloadBtn #copyToast
  */
@@ -196,9 +197,19 @@
     });
   }
 
+  /** 按 __OFFLINE_RELOAD_INTERVAL__（ms）定时刷新；未设或 ≤0 则不开启 */
+  function bindAutoReload() {
+    var ms = window.__OFFLINE_RELOAD_INTERVAL__;
+    if (typeof ms !== 'number' || !isFinite(ms) || ms <= 0) return;
+    setInterval(function () {
+      location.reload();
+    }, Math.floor(ms));
+  }
+
   applyOfflineLocale();
   startTypingAnimation();
   bindCopyDomain();
   bindContactBtn();
   bindOnlineReload();
+  bindAutoReload();
 })();

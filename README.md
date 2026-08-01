@@ -68,6 +68,8 @@ export default defineConfig({
       // offlineDomain: 'https://www.example.com',
       // 离线页默认语言（可选；不传为 zh_CN；支持 en、en-US、en_US 等）
       // defaultLocale: 'en_US',
+      // 离线页自动刷新间隔 ms（可选；默认 3000；传 0 关闭）
+      // offlineReloadInterval: 3000,
       // 内置皮肤（与 offlineTemplatePath 二选一，路径优先）
       // offlineSkin: 'aurora',
       // 可走 SWR 的 API 路径白名单（pathname 包含即匹配）；不传则为空
@@ -273,6 +275,7 @@ vitePluginSwOffline({
 | `offlineLogoPath` | `string` | 离线页 `__OFFLINE_LOGO__` 与 SW 预缓存 Logo；支持 `https://`、根路径 `/`、`?v=`。 |
 | `offlineDomain` | `string` | 离线页打字机 / 复制域名文案。未传或空串时，构建注入 `window.__OFFLINE_DOMAIN_TEXT__ = location.origin`（运行时取当前站点 origin）。 |
 | `defaultLocale` | `string` | 离线页默认语言。未传或空串时为 `zh_CN`。支持简写（如 `en` → `en_US`）及 `zh-CN` / `zh_CN` 等形式；键须存在于 `offline-i18n.json`，否则回退 `zh_CN` 并打警告。 |
+| `offlineReloadInterval` | `number` | 离线页自动刷新间隔（毫秒）。默认 `3000`；传 `0` 关闭；非法或负数回退默认。 |
 | `offlineSkin` | `string` | 使用包内置皮肤 id（如 `aurora` → `templates/skins/aurora/offline.html`）。与 `offlineTemplatePath` 同时配置时，**以路径为准**。 |
 | `offlineTemplatePath` | `string` | 自定义离线页 HTML（绝对路径或相对 `process.cwd()`）。不存在则尝试 `offlineSkin`，再回退 default。 |
 | `cacheableApiPaths` | `string[]` | API 路径白名单（pathname 包含即走 SWR）。不传则为空列表。 |
@@ -311,7 +314,7 @@ resolveServiceWorker({ serviceWorker: { apiTimeout: 5000 } });
 | `sw.js` | `__SW_RT_*__` | `serviceWorker` 各字段 |
 | `sw-register.js` | `__SW_VERSION__` | `swVersion` |
 | `offline.html` | `__OFFLINE_PAGE_STYLES__` | `templates/shared/offline-ui-motion.css`（入场、按钮、输入框等动效） |
-| `offline.html` | `__OFFLINE_PAGE_SCRIPT__` | 引导变量 + `templates/shared/offline-common.js`（i18n、打字机、复制、客服）；其中 `__OFFLINE_DEFAULT_LOCALE__` 来自 `defaultLocale`（默认 `zh_CN`），`__OFFLINE_DOMAIN_TEXT__` 来自 `offlineDomain`，未配置则为 `location.origin` |
+| `offline.html` | `__OFFLINE_PAGE_SCRIPT__` | 引导变量 + `templates/shared/offline-common.js`（i18n、打字机、复制、客服、定时刷新）；其中 `__OFFLINE_DEFAULT_LOCALE__` 来自 `defaultLocale`（默认 `zh_CN`），`__OFFLINE_DOMAIN_TEXT__` 来自 `offlineDomain`（未配置则为 `location.origin`），`__OFFLINE_RELOAD_INTERVAL__` 来自 `offlineReloadInterval`（默认 `3000`，`0` 关闭） |
 | `offline.html` | `__OFFLINE_LOGO__` | `offlineLogoPath` |
 | `offline.html` | `__OFFLINE_DOMAIN__` | `offlineDomain` 字面量（仅旧模板占位符；未配置时为空，新模板请用 `__OFFLINE_PAGE_SCRIPT__`） |
 | `offline.html` | `__OFFLINE_I18N_INJECT__` | 已废弃，自定义旧模板仍兼容 |
@@ -372,6 +375,8 @@ import {
   normalizeOfflineLocaleKey,
   resolveDefaultLocale,
   getDefaultOfflineLocale,
+  resolveOfflineReloadInterval,
+  getDefaultOfflineReloadInterval,
   injectOfflineHtml
 } from 'vite-plugin-sw-offline';
 ```
@@ -396,6 +401,8 @@ import {
 | `normalizeOfflineLocaleKey(s)` | locale 简写 / 连字符规范化（如 `en` → `en_US`） |
 | `resolveDefaultLocale(options)` | 按 `defaultLocale` 与 i18n 表解析最终默认键 |
 | `getDefaultOfflineLocale()` | 常量 `zh_CN`（未配置插件时的内置默认） |
+| `resolveOfflineReloadInterval(options)` | 按 `offlineReloadInterval` 解析最终间隔（ms） |
+| `getDefaultOfflineReloadInterval()` | 常量 `3000` |
 | `injectOfflineHtml(html, options)` | 仅注入离线页占位符 |
 
 ## 离线页皮肤
